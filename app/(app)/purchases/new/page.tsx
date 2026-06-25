@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 
 export default async function NewPurchasePage() {
   const ctx = await getActiveContext();
-  const { vendors, ingredients } = await getPurchaseFormData(ctx!.orgId!);
+  const { vendors, ingredients, branches } = await getPurchaseFormData(ctx!.orgId!);
 
   if (vendors.length === 0 || ingredients.length === 0) {
     return (
@@ -16,7 +16,7 @@ export default async function NewPurchasePage() {
           To record a purchase you first need at least one{" "}
           {vendors.length === 0 && <Link href="/masters/vendors" className="text-primary underline">vendor</Link>}
           {vendors.length === 0 && ingredients.length === 0 && " and one "}
-          {ingredients.length === 0 && <Link href="/masters/ingredients" className="text-primary underline">ingredient</Link>}.
+          {ingredients.length === 0 && <Link href="/masters/ingredients" className="text-primary underline">product</Link>}.
           Add them, then come back.
         </CardContent></Card>
       </div>
@@ -25,8 +25,8 @@ export default async function NewPurchasePage() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-xl font-semibold">New Purchase <span className="text-sm font-normal text-muted-foreground">· {ctx!.branch?.name}</span></h1>
-      <PurchaseForm vendors={vendors} ingredients={ingredients} />
+      <h1 className="text-xl font-semibold">New Purchase</h1>
+      <PurchaseForm vendors={vendors} ingredients={ingredients} branches={branches} defaultBranchId={ctx!.branch?.id ?? ""} />
     </div>
   );
 }
