@@ -3,13 +3,15 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import {
-  LayoutDashboard, Boxes, ShoppingCart, IndianRupee, Package, Receipt, Store, Settings,
+  LayoutDashboard, Boxes, Store, Tags, Ruler, ShoppingCart, IndianRupee, Package, Receipt, Settings,
 } from "lucide-react";
 
 const nav = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/masters/ingredients", label: "Ingredients", icon: Boxes },
+  { href: "/masters/ingredients", label: "Materials", icon: Boxes },
   { href: "/masters/vendors", label: "Vendors", icon: Store },
+  { href: "/masters/categories", label: "Categories", icon: Tags },
+  { href: "/masters/units", label: "Units (UOM)", icon: Ruler },
   { href: "/purchases", label: "Purchases", icon: ShoppingCart },
   { href: "/sales", label: "Sales", icon: IndianRupee },
   { href: "/inventory", label: "Inventory", icon: Package },
@@ -26,8 +28,7 @@ export function Sidebar() {
       </div>
       <nav className="space-y-1 px-2">
         {nav.map(({ href, label, icon: Icon }) => {
-          const active = path === href || path.startsWith(href + "/") ||
-            (href !== "/dashboard" && path.startsWith(href.split("/").slice(0, 2).join("/")));
+          const active = path === href || path.startsWith(href + "/");
           return (
             <Link key={href} href={href}
               className={cn("flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium",

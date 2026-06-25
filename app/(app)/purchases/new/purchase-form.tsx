@@ -10,11 +10,14 @@ import { inr } from "@/lib/utils";
 import { Trash2 } from "lucide-react";
 
 type Vendor = { id: string; name: string };
-type Ingredient = { id: string; name: string; default_gst_rate: number };
 type Branch = { id: string; name: string };
+type Ingredient = {
+  id: string; name: string; default_gst_rate: number; default_vendor_id: string;
+  category_name: string; uom: string; last_price: number;
+};
 type Line = { category: string; ingredient_id: string; uom: string; qty: string; rate: string; with_gst: string };
 
-const blank: Line = { category: "", ingredient_id: "", uom: "", qty: "", rate: "", with_gst: "" };
+const blank: Line = { category: "", ingredient_id: "", uom: "", qty: "1", rate: "", with_gst: "" };
 const fieldCls = "h-9 w-full rounded-md border border-input bg-background px-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary";
 
 export function PurchaseForm({ vendors, ingredients, branches, defaultBranchId }: {
@@ -37,10 +40,25 @@ export function PurchaseForm({ vendors, ingredients, branches, defaultBranchId }
 
   function onProduct(i: number, id: string) {
     const ing = ingredients.find((x) => x.id === id);
-    const l = lines[i];
-    const base = withoutGst({ ...l, ingredient_id: id });
-    const suggested = ing && ing.default_gst_rate ? (base * (1 + Number(ing.default_gst_rate) / 100)).toFixed(2) : l.with_gst;
-    update(i, { ingredient_id: id, with_gst: l.with_gst || suggested });
+    setLines((ls) => ls.map((l, idx) => {
+      if (idx !== i) return l;
+      const rate = ing && ing.last_price ? String(ing.last_price) : l.rate;
+      const base = num(l.qty) * num(rate);
+      const withGst = ing && ing.default_gst_rate ? (base * (1 + ing.default_gst_rate / 100)).toFixed(2) : l.with_gst;
+      return { ...l, ingredient_id: id, category: ing?.category_name || l.category, uom: ing?.uom || l.uom, rate, with_gst: withGst };
+    }));
+    if (ing?.default_vendor_id && !vendorId) setVendorId(ing.default_vendor_id);
+  }
+
+  function recalcWith(i: number, patch: Partial<Line>) {
+    setLines((ls) => ls.map((l, idx) => {
+      if (idx !== i) return l;
+      const merged = { ...l, ...patch };
+      const ing = ingredients.find((x) => x.id === merged.ingredient_id);
+      const base = num(merged.qty) * num(merged.rate);
+      if (ing && ing.default_gst_rate && base > 0) merged.with_gst = (base * (1 + ing.default_gst_rate / 100)).toFixed(2);
+      return merged;
+    }));
   }
 
   const totalWithout = lines.reduce((s, l) => s + withoutGst(l), 0);
@@ -57,12 +75,8 @@ export function PurchaseForm({ vendors, ingredients, branches, defaultBranchId }
         bill_no: billNo,
         bill_date: billDate,
         items: lines.map((l) => ({
-          ingredient_id: l.ingredient_id,
-          category: l.category,
-          uom: l.uom,
-          qty: num(l.qty),
-          rate: num(l.rate),
-          with_gst: l.with_gst ? num(l.with_gst) : undefined,
+          ingredient_id: l.ingredient_id, category: l.category, uom: l.uom,
+          qty: num(l.qty), rate: num(l.rate), with_gst: l.with_gst ? num(l.with_gst) : undefined,
         })),
       });
       if (res?.error) setError(res.error);
@@ -76,8 +90,7 @@ export function PurchaseForm({ vendors, ingredients, branches, defaultBranchId }
         <div className="space-y-1.5">
           <Label>Petty cash/Credit</Label>
           <select value={paymentMode} onChange={(e) => setPaymentMode(e.target.value)} className={fieldCls}>
-            <option value="credit">Credit</option>
-            <option value="petty_cash">Petty Cash</option>
+            <option value="credit">Credit</option><option value="petty_cash">Petty Cash</option>
           </select>
         </div>
         <div className="space-y-1.5">
@@ -114,16 +127,16 @@ export function PurchaseForm({ vendors, ingredients, branches, defaultBranchId }
           <tbody>
             {lines.map((l, i) => (
               <tr key={i} className="border-b last:border-0">
-                <td className="p-1.5"><Input className="h-9 w-28" value={l.category} onChange={(e) => update(i, { category: e.target.value })} placeholder="e.g. Dairy" /></td>
+                <td className="p-1.5"><Input className="h-9 w-28" value={l.category} onChange={(e) => update(i, { category: e.target.value })} placeholder="auto" /></td>
                 <td className="p-1.5">
-                  <select value={l.ingredient_id} onChange={(e) => onProduct(i, e.target.value)} className={fieldCls + " min-w-40"}>
+                  <select value={l.ingredient_id} onChange={(e) => onProduct(i, e.target.value)} className={fieldCls + " min-w-44"}>
                     <option value="">Select…</option>
                     {ingredients.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
                   </select>
                 </td>
-                <td className="p-1.5"><Input className="h-9 w-20" value={l.uom} onChange={(e) => update(i, { uom: e.target.value })} placeholder="kg / pcs" /></td>
-                <td className="p-1.5"><Input className="h-9 w-20" type="number" step="0.0001" value={l.qty} onChange={(e) => update(i, { qty: e.target.value })} /></td>
-                <td className="p-1.5"><Input className="h-9 w-24" type="number" step="0.01" value={l.rate} onChange={(e) => update(i, { rate: e.target.value })} /></td>
+                <td className="p-1.5"><Input className="h-9 w-20" value={l.uom} onChange={(e) => update(i, { uom: e.target.value })} placeholder="auto" /></td>
+                <td className="p-1.5"><Input className="h-9 w-20" type="number" step="0.0001" value={l.qty} onChange={(e) => recalcWith(i, { qty: e.target.value })} /></td>
+                <td className="p-1.5"><Input className="h-9 w-24" type="number" step="0.01" value={l.rate} onChange={(e) => recalcWith(i, { rate: e.target.value })} /></td>
                 <td className="p-1.5 text-right tabular-nums">{inr(withoutGst(l))}</td>
                 <td className="p-1.5"><Input className="h-9 w-28" type="number" step="0.01" value={l.with_gst} onChange={(e) => update(i, { with_gst: e.target.value })} placeholder="incl. GST" /></td>
                 <td className="p-1.5 text-center">
@@ -145,7 +158,7 @@ export function PurchaseForm({ vendors, ingredients, branches, defaultBranchId }
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="text-sm text-muted-foreground">
           Without GST <span className="font-medium text-foreground">{inr(totalWithout)}</span> · GST <span className="font-medium text-foreground">{inr(totalGst)}</span> · With GST <span className="font-semibold text-foreground">{inr(totalWith)}</span>
-          <div className="text-xs">Without GST = Qty × Per pcs. GST is split into CGST+SGST / IGST automatically by vendor &amp; location state.</div>
+          <div className="text-xs">Category, UOM, GST &amp; price auto-fill from the Material master when you pick a product.</div>
         </div>
         <Button onClick={submit} disabled={pending} className="sm:w-44">{pending ? "Saving…" : "Save Purchase"}</Button>
       </div>
