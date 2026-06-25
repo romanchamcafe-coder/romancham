@@ -21,8 +21,8 @@ export function Sidebar() {
   const path = usePathname();
   return (
     <aside className="hidden w-56 shrink-0 border-r bg-card md:block">
-      <div className="px-5 py-4 text-lg font-bold">
-        <span className="text-primary">Brew</span>metrics
+      <div className="px-5 py-4 text-xl font-extrabold tracking-tight text-primary">
+        Romancham
       </div>
       <nav className="space-y-1 px-2">
         {nav.map(({ href, label, icon: Icon }) => {
