@@ -26,7 +26,7 @@ export async function getPurchaseFormData(orgId: string) {
       supabase.from("vendors").select("id, name").eq("org_id", orgId).eq("is_active", true).order("name"),
       supabase.from("branches").select("id, name").eq("org_id", orgId).eq("is_active", true).order("name"),
       supabase.from("ingredients").select("id, name, category_id, base_unit_id, default_gst_rate, default_vendor_id")
-        .eq("org_id", orgId).eq("is_active", true).order("name"),
+        .eq("org_id", orgId).eq("is_active", true).in("material_type", ["purchase", "both"]).order("name"),
       supabase.from("categories").select("id, name").eq("org_id", orgId),
       supabase.from("units").select("id, abbr").eq("org_id", orgId),
       supabase.from("vendor_ingredients").select("ingredient_id, vendor_id, last_price"),

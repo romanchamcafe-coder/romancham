@@ -14,11 +14,14 @@ export async function createIngredient(_: ActionState | null, formData: FormData
   if (!ctx?.orgId) return { error: "No active organization" };
   const name = String(formData.get("name") || "").trim();
   if (!name) return { error: "Material name required" };
+  const mt = String(formData.get("material_type") || "purchase");
+  const material_type = ["purchase", "sales", "both"].includes(mt) ? mt : "purchase";
 
   const supabase = await createClient();
   const { error } = await supabase.from("ingredients").insert({
     org_id: ctx.orgId,
     name,
+    material_type,
     category_id: orNull(formData.get("category_id")),
     base_unit_id: orNull(formData.get("base_unit_id")),
     default_vendor_id: orNull(formData.get("default_vendor_id")),
@@ -28,5 +31,6 @@ export async function createIngredient(_: ActionState | null, formData: FormData
   });
   if (error) return { error: error.message };
   revalidatePath("/masters/ingredients");
+  revalidatePath("/purchases/new");
   return { ok: true };
 }

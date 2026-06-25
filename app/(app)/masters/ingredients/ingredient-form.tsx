@@ -15,7 +15,15 @@ export function IngredientForm({ categories, units, vendors }: { categories: Opt
   return (
     <form ref={ref} action={action} className="rounded-lg border bg-card p-4">
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="space-y-1.5"><Label>Material name</Label><Input name="name" required placeholder="e.g. Amul Butter" /></div>
+        <div className="space-y-1.5"><Label>Material name</Label><Input name="name" required placeholder="e.g. Amul Butter / Chocolate Brownie" /></div>
+        <div className="space-y-1.5">
+          <Label>Type</Label>
+          <select name="material_type" defaultValue="purchase" className={sel}>
+            <option value="purchase">Purchase (raw material you buy)</option>
+            <option value="sales">Sales (product you sell)</option>
+            <option value="both">Both</option>
+          </select>
+        </div>
         <div className="space-y-1.5">
           <Label>Category</Label>
           <select name="category_id" className={sel}><option value="">—</option>
@@ -37,9 +45,11 @@ export function IngredientForm({ categories, units, vendors }: { categories: Opt
         <div className="space-y-1.5"><Label>GST %</Label><Input name="default_gst_rate" type="number" step="0.01" placeholder="5" /></div>
         <div className="space-y-1.5"><Label>Reorder level</Label><Input name="reorder_level" type="number" step="0.0001" placeholder="0" /></div>
         <div className="space-y-1.5"><Label>HSN code</Label><Input name="hsn_code" placeholder="optional" /></div>
-        <div className="flex items-end"><Button disabled={pending} className="w-full">{pending ? "Adding…" : "Add Material"}</Button></div>
       </div>
-      {state?.error && <p className="mt-2 text-sm text-destructive">{state.error}</p>}
+      <div className="mt-3 flex items-center justify-end gap-3">
+        {state?.error && <p className="text-sm text-destructive">{state.error}</p>}
+        <Button disabled={pending}>{pending ? "Adding…" : "Add Material"}</Button>
+      </div>
     </form>
   );
 }

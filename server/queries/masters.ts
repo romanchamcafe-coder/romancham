@@ -10,11 +10,16 @@ export async function getMaterialFormData(orgId: string) {
   return { categories: categories ?? [], units: units ?? [], vendors: vendors ?? [] };
 }
 
-export async function getMaterials(orgId: string) {
+export async function getMaterials(orgId: string, type?: string) {
   const supabase = await createClient();
+  let mq = supabase.from("ingredients")
+    .select("id, name, material_type, category_id, base_unit_id, default_vendor_id, default_gst_rate, reorder_level")
+    .eq("org_id", orgId).order("name");
+  if (type === "purchase") mq = mq.in("material_type", ["purchase", "both"]);
+  else if (type === "sales") mq = mq.in("material_type", ["sales", "both"]);
+
   const [{ data: items }, { data: categories }, { data: units }, { data: vendors }] = await Promise.all([
-    supabase.from("ingredients").select("id, name, category_id, base_unit_id, default_vendor_id, default_gst_rate, reorder_level")
-      .eq("org_id", orgId).order("name"),
+    mq,
     supabase.from("categories").select("id, name").eq("org_id", orgId),
     supabase.from("units").select("id, abbr").eq("org_id", orgId),
     supabase.from("vendors").select("id, name").eq("org_id", orgId),
