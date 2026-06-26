@@ -10,7 +10,6 @@ export async function createVendor(_: ActionState | null, formData: FormData): P
   if (!ctx?.orgId) return { error: "No active organization" };
   const parsed = vendorSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { error: parsed.error.issues[0].message };
-
   const supabase = await createClient();
   const { error } = await supabase.from("vendors").insert({ ...parsed.data, org_id: ctx.orgId });
   if (error) return { error: error.message };
@@ -18,8 +17,11 @@ export async function createVendor(_: ActionState | null, formData: FormData): P
   return { ok: true };
 }
 
-export async function deleteVendor(id: string): Promise<void> {
+export async function deactivateVendor(formData: FormData): Promise<void> {
+  const ctx = await getActiveContext();
+  const id = String(formData.get("id") || "");
+  if (!ctx?.orgId || !id) return;
   const supabase = await createClient();
-  await supabase.from("vendors").delete().eq("id", id);
+  await supabase.from("vendors").update({ is_active: false }).eq("id", id).eq("org_id", ctx.orgId);
   revalidatePath("/masters/vendors");
 }

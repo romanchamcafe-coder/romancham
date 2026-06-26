@@ -4,24 +4,19 @@ import { getActiveContext } from "@/lib/auth/session";
 import { revalidatePath } from "next/cache";
 import type { ActionState } from "@/lib/types";
 
-const orNull = (v: FormDataEntryValue | null) => {
-  const s = String(v ?? "").trim();
-  return s === "" ? null : s;
-};
+const orNull = (v: FormDataEntryValue | null) => { const s = String(v ?? "").trim(); return s === "" ? null : s; };
 
 export async function createIngredient(_: ActionState | null, formData: FormData): Promise<ActionState> {
   const ctx = await getActiveContext();
   if (!ctx?.orgId) return { error: "No active organization" };
   const name = String(formData.get("name") || "").trim();
-  if (!name) return { error: "Material name required" };
+  if (!name) return { error: "Item name required" };
   const mt = String(formData.get("material_type") || "purchase");
   const material_type = ["purchase", "sales", "both"].includes(mt) ? mt : "purchase";
 
   const supabase = await createClient();
   const { error } = await supabase.from("ingredients").insert({
-    org_id: ctx.orgId,
-    name,
-    material_type,
+    org_id: ctx.orgId, name, material_type,
     category_id: orNull(formData.get("category_id")),
     base_unit_id: orNull(formData.get("base_unit_id")),
     default_vendor_id: orNull(formData.get("default_vendor_id")),
@@ -33,4 +28,13 @@ export async function createIngredient(_: ActionState | null, formData: FormData
   revalidatePath("/masters/ingredients");
   revalidatePath("/purchases/new");
   return { ok: true };
+}
+
+export async function deactivateIngredient(formData: FormData): Promise<void> {
+  const ctx = await getActiveContext();
+  const id = String(formData.get("id") || "");
+  if (!ctx?.orgId || !id) return;
+  const supabase = await createClient();
+  await supabase.from("ingredients").update({ is_active: false }).eq("id", id).eq("org_id", ctx.orgId);
+  revalidatePath("/masters/ingredients");
 }

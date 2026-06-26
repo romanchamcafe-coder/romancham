@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getActiveContext } from "@/lib/auth/session";
 import { getMaterialFormData, getMaterials } from "@/server/queries/masters";
+import { deactivateIngredient } from "@/server/actions/ingredients";
 import { Card } from "@/components/ui/card";
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -15,7 +16,6 @@ export default async function MaterialsPage({ searchParams }: { searchParams: Pr
   const active = type === "purchase" || type === "sales" ? type : "all";
   const { categories, units, vendors } = await getMaterialFormData(ctx!.orgId!);
   const items = await getMaterials(ctx!.orgId!, active === "all" ? undefined : active);
-
   const tabs = [["all", "All"], ["purchase", "Purchase"], ["sales", "Sales"]] as const;
 
   return (
@@ -27,8 +27,7 @@ export default async function MaterialsPage({ searchParams }: { searchParams: Pr
       <div className="flex gap-2">
         {tabs.map(([k, l]) => (
           <Link key={k} href={k === "all" ? "/masters/ingredients" : `/masters/ingredients?type=${k}`}
-            className={cn("rounded-md px-3 py-1.5 text-sm font-medium",
-              active === k ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted")}>
+            className={cn("rounded-md px-3 py-1.5 text-sm font-medium", active === k ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted")}>
             {l}
           </Link>
         ))}
@@ -36,7 +35,7 @@ export default async function MaterialsPage({ searchParams }: { searchParams: Pr
 
       <Card className="overflow-x-auto">
         <Table>
-          <THead><TR><TH>Item Name</TH><TH>Type</TH><TH>Category</TH><TH>UOM</TH><TH>GST %</TH><TH>Reorder</TH><TH>Default Vendor</TH></TR></THead>
+          <THead><TR><TH>Item Name</TH><TH>Type</TH><TH>Category</TH><TH>UOM</TH><TH>GST %</TH><TH>Reorder</TH><TH>Default Vendor</TH><TH></TH></TR></THead>
           <TBody>
             {items.map((i: any) => (
               <TR key={i.id}>
@@ -47,9 +46,10 @@ export default async function MaterialsPage({ searchParams }: { searchParams: Pr
                 <TD>{i.default_gst_rate}%</TD>
                 <TD>{i.reorder_level}</TD>
                 <TD>{i.vendor_name}</TD>
+                <TD className="text-right"><form action={deactivateIngredient}><input type="hidden" name="id" value={i.id} /><button className="text-xs text-muted-foreground hover:text-destructive">Remove</button></form></TD>
               </TR>
             ))}
-            {items.length === 0 && <TR><TD colSpan={7} className="py-8 text-center text-muted-foreground">No items yet.</TD></TR>}
+            {items.length === 0 && <TR><TD colSpan={8} className="py-8 text-center text-muted-foreground">No items yet.</TD></TR>}
           </TBody>
         </Table>
       </Card>
