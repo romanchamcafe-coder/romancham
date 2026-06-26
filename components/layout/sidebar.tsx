@@ -8,7 +8,7 @@ import {
 
 const nav = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/masters/ingredients", label: "Materials", icon: Boxes },
+  { href: "/masters/ingredients", label: "Item Name", icon: Boxes },
   { href: "/masters/vendors", label: "Vendors", icon: Store },
   { href: "/masters/categories", label: "Categories", icon: Tags },
   { href: "/masters/units", label: "Units (UOM)", icon: Ruler },

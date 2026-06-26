@@ -15,11 +15,11 @@ export function IngredientForm({ categories, units, vendors }: { categories: Opt
   return (
     <form ref={ref} action={action} className="rounded-lg border bg-card p-4">
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="space-y-1.5"><Label>Material name</Label><Input name="name" required placeholder="e.g. Amul Butter / Chocolate Brownie" /></div>
+        <div className="space-y-1.5"><Label>Item Name</Label><Input name="name" required placeholder="e.g. Amul Butter / Chocolate Brownie" /></div>
         <div className="space-y-1.5">
           <Label>Type</Label>
           <select name="material_type" defaultValue="purchase" className={sel}>
-            <option value="purchase">Purchase (raw material you buy)</option>
+            <option value="purchase">Purchase (raw item you buy)</option>
             <option value="sales">Sales (product you sell)</option>
             <option value="both">Both</option>
           </select>
@@ -48,7 +48,7 @@ export function IngredientForm({ categories, units, vendors }: { categories: Opt
       </div>
       <div className="mt-3 flex items-center justify-end gap-3">
         {state?.error && <p className="text-sm text-destructive">{state.error}</p>}
-        <Button disabled={pending}>{pending ? "Adding…" : "Add Material"}</Button>
+        <Button disabled={pending}>{pending ? "Adding…" : "Add Item"}</Button>
       </div>
     </form>
   );

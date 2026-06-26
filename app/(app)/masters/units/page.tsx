@@ -11,7 +11,7 @@ export default async function UnitsPage() {
   return (
     <div className="space-y-4">
       <h1 className="text-xl font-semibold">Units of Measure (UOM)</h1>
-      <p className="text-sm text-muted-foreground">Units used for materials and purchases (kg, g, pcs, ltr…).</p>
+      <p className="text-sm text-muted-foreground">Units used for items and purchases (kg, g, pcs, ltr…).</p>
       <UnitForm />
       <Card>
         <Table>

@@ -158,7 +158,7 @@ export function PurchaseForm({ vendors, ingredients, branches, defaultBranchId }
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="text-sm text-muted-foreground">
           Without GST <span className="font-medium text-foreground">{inr(totalWithout)}</span> · GST <span className="font-medium text-foreground">{inr(totalGst)}</span> · With GST <span className="font-semibold text-foreground">{inr(totalWith)}</span>
-          <div className="text-xs">Category, UOM, GST &amp; price auto-fill from the Material master when you pick a product.</div>
+          <div className="text-xs">Category, UOM, GST &amp; price auto-fill from the Item master when you pick a product.</div>
         </div>
         <Button onClick={submit} disabled={pending} className="sm:w-44">{pending ? "Saving…" : "Save Purchase"}</Button>
       </div>

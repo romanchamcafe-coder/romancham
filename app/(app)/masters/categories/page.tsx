@@ -12,7 +12,7 @@ export default async function CategoriesPage() {
   return (
     <div className="space-y-4">
       <h1 className="text-xl font-semibold">Categories</h1>
-      <p className="text-sm text-muted-foreground">Groups for your materials (Dairy, Bakery, Packaging…). Used in the Material master and Purchases.</p>
+      <p className="text-sm text-muted-foreground">Groups for your items (Dairy, Bakery, Packaging…). Used in the Item master and Purchases.</p>
       <CategoryForm />
       <Card>
         <Table>

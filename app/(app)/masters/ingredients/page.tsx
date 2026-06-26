@@ -20,8 +20,8 @@ export default async function MaterialsPage({ searchParams }: { searchParams: Pr
 
   return (
     <div className="space-y-4">
-      <h1 className="text-xl font-semibold">Materials</h1>
-      <p className="text-sm text-muted-foreground">Your material master. <b>Purchase</b> materials show in Purchases; <b>Sales</b> materials are products you sell (they appear in the sales report).</p>
+      <h1 className="text-xl font-semibold">Item Name</h1>
+      <p className="text-sm text-muted-foreground">Your item master. <b>Purchase</b> items show in Purchases; <b>Sales</b> items are products you sell (they appear in the sales report).</p>
       <IngredientForm categories={categories} units={units} vendors={vendors} />
 
       <div className="flex gap-2">
@@ -36,7 +36,7 @@ export default async function MaterialsPage({ searchParams }: { searchParams: Pr
 
       <Card className="overflow-x-auto">
         <Table>
-          <THead><TR><TH>Material</TH><TH>Type</TH><TH>Category</TH><TH>UOM</TH><TH>GST %</TH><TH>Reorder</TH><TH>Default Vendor</TH></TR></THead>
+          <THead><TR><TH>Item Name</TH><TH>Type</TH><TH>Category</TH><TH>UOM</TH><TH>GST %</TH><TH>Reorder</TH><TH>Default Vendor</TH></TR></THead>
           <TBody>
             {items.map((i: any) => (
               <TR key={i.id}>
@@ -49,7 +49,7 @@ export default async function MaterialsPage({ searchParams }: { searchParams: Pr
                 <TD>{i.vendor_name}</TD>
               </TR>
             ))}
-            {items.length === 0 && <TR><TD colSpan={7} className="py-8 text-center text-muted-foreground">No materials yet.</TD></TR>}
+            {items.length === 0 && <TR><TD colSpan={7} className="py-8 text-center text-muted-foreground">No items yet.</TD></TR>}
           </TBody>
         </Table>
       </Card>
