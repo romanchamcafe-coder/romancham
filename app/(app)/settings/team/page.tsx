@@ -11,6 +11,11 @@ export default async function SettingsPage() {
   const ctx = await getActiveContext();
   const { org, branches, members } = await getSettings(ctx!.orgId!);
 
+  const queried = (members ?? []).map((m: any) => ({ user_id: m.user_id, role: m.role, name: m.profiles?.full_name ?? "" }));
+  const teamMembers = queried.some((m) => m.user_id === ctx!.user.id)
+    ? queried
+    : [{ user_id: ctx!.user.id, role: ctx!.role ?? "owner", name: ctx!.user.email ?? "" }, ...queried];
+
   return (
     <div className="space-y-6">
       <h1 className="text-xl font-semibold">Settings</h1>
@@ -45,7 +50,7 @@ export default async function SettingsPage() {
         <CardHeader><CardTitle>Team</CardTitle></CardHeader>
         <CardContent>
           <TeamManager
-            members={(members ?? []).map((m: any) => ({ user_id: m.user_id, role: m.role, name: m.profiles?.full_name ?? "" }))}
+            members={teamMembers}
             currentUserId={ctx!.user.id}
             canManage={ctx!.role === "owner"}
           />
