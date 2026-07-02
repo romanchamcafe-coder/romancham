@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { OnboardingChecklist } from "@/components/ui/onboarding-checklist";
 import { PurchasesTable } from "./purchases-table";
 import { PurchasesFilters } from "./purchases-filters";
+import { ExportButton } from "@/components/ui/export-button";
+import type { PurchaseSortKey } from "@/server/queries/purchases";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 const PAGE_SIZE = 50;
@@ -14,7 +16,10 @@ export default async function PurchasesPage({ searchParams }: { searchParams: Pr
   const sp = await searchParams;
   const page = Math.max(1, Number(sp.page) || 1);
   const anyFilter = !!(sp.q || sp.vendor || sp.invoice || sp.from || sp.to || sp.category);
-  const filters: PurchaseFilters = { search: sp.q, vendor: sp.vendor, invoice: sp.invoice, from: sp.from, to: sp.to, category: sp.category };
+  const filters: PurchaseFilters = {
+    search: sp.q, vendor: sp.vendor, invoice: sp.invoice, from: sp.from, to: sp.to, category: sp.category,
+    sort: sp.sort as PurchaseSortKey | undefined, dir: sp.dir === "desc" ? "desc" : sp.dir === "asc" ? "asc" : undefined,
+  };
 
   const { rows, total } = await getPurchaseRegister(ctx!.orgId!, ctx!.branch?.id ?? null, filters, page, PAGE_SIZE);
 
@@ -63,7 +68,11 @@ export default async function PurchasesPage({ searchParams }: { searchParams: Pr
 
       <PurchasesFilters vendors={meta.vendors} categories={meta.categories} />
 
-      <PurchasesTable rows={rows} />
+      <div className="flex justify-end">
+        <ExportButton kind="purchases" filters={filters} filename="romancham-purchases.csv" />
+      </div>
+
+      <PurchasesTable rows={rows} sort={sp.sort} dir={sp.dir} />
 
       {total > 0 && (
         <div className="flex items-center justify-between text-sm text-muted-foreground">

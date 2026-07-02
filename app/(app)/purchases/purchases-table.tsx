@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { inr } from "@/lib/utils";
@@ -23,30 +24,22 @@ const COLS: Col[] = [
 ];
 const modeLabel = (m: string | null) => (m === "petty_cash" ? "Petty Cash" : m === "credit" ? "Credit" : "—");
 
-export function PurchasesTable({ rows }: { rows: PurchaseRow[] }) {
+export function PurchasesTable({ rows, sort, dir }: { rows: PurchaseRow[]; sort?: string; dir?: string }) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const sp = useSearchParams();
   const [hidden, setHidden] = useState<Set<string>>(new Set());
-  const [sortKey, setSortKey] = useState<keyof PurchaseRow | null>(null);
-  const [dir, setDir] = useState<"asc" | "desc">("asc");
   const [showCols, setShowCols] = useState(false);
 
   const visible = COLS.filter((c) => !hidden.has(c.key));
-  const sorted = [...rows];
-  if (sortKey) {
-    sorted.sort((a, b) => {
-      const av = a[sortKey], bv = b[sortKey];
-      const cmp = typeof av === "number" && typeof bv === "number"
-        ? (av as number) - (bv as number)
-        : String(av).localeCompare(String(bv));
-      return dir === "asc" ? cmp : -cmp;
-    });
-  }
-  const toggleSort = (k: keyof PurchaseRow) => {
-    if (sortKey === k) setDir(dir === "asc" ? "desc" : "asc");
-    else { setSortKey(k); setDir("asc"); }
+
+  const sortBy = (key: string) => {
+    const params = new URLSearchParams(sp.toString());
+    const nextDir = sort === key && dir === "asc" ? "desc" : "asc";
+    params.set("sort", key); params.set("dir", nextDir); params.set("page", "1");
+    router.push(`${pathname}?${params.toString()}`);
   };
-  const toggleCol = (k: string) => setHidden((s) => {
-    const n = new Set(s); n.has(k) ? n.delete(k) : n.add(k); return n;
-  });
+  const toggleCol = (k: string) => setHidden((s) => { const n = new Set(s); n.has(k) ? n.delete(k) : n.add(k); return n; });
 
   const cell = (c: Col, r: PurchaseRow) => {
     if (c.key === "payment_mode") return <Badge tone={r.payment_mode === "petty_cash" ? "green" : "amber"}>{modeLabel(r.payment_mode)}</Badge>;
@@ -83,18 +76,19 @@ export function PurchasesTable({ rows }: { rows: PurchaseRow[] }) {
           <thead className="sticky top-0 z-10 bg-muted text-left shadow-sm">
             <tr>
               {visible.map((c) => (
-                <th key={c.key} onClick={() => toggleSort(c.key)}
+                <th key={c.key} onClick={() => sortBy(c.key)}
+                  aria-sort={sort === c.key ? (dir === "asc" ? "ascending" : "descending") : "none"}
                   className={"cursor-pointer select-none px-3 py-2 font-medium hover:bg-muted/70 " + (c.numeric ? "text-right" : "")}>
                   <span className="inline-flex items-center gap-1">
                     {c.label}
-                    {sortKey === c.key && (dir === "asc" ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />)}
+                    {sort === c.key && (dir === "asc" ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />)}
                   </span>
                 </th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {sorted.map((r) => (
+            {rows.map((r) => (
               <tr key={r.id} className="border-b last:border-0 hover:bg-muted/40">
                 {visible.map((c) => (
                   <td key={c.key} className={"px-3 py-2 " + (c.numeric ? "text-right tabular-nums" : "") + (c.key === "product" ? " font-medium" : "")}>
@@ -103,7 +97,7 @@ export function PurchasesTable({ rows }: { rows: PurchaseRow[] }) {
                 ))}
               </tr>
             ))}
-            {sorted.length === 0 && (
+            {rows.length === 0 && (
               <tr><td colSpan={visible.length} className="px-3 py-8 text-center text-muted-foreground">No purchases match these filters.</td></tr>
             )}
           </tbody>

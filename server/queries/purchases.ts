@@ -1,7 +1,12 @@
 import { createClient } from "@/lib/supabase/server";
 
+export type PurchaseSortKey =
+  | "payment_mode" | "vendor" | "location" | "bill_no" | "bill_date"
+  | "category" | "product" | "uom" | "qty" | "rate" | "without_gst" | "with_gst";
+
 export type PurchaseFilters = {
   search?: string; vendor?: string; from?: string; to?: string; invoice?: string; category?: string;
+  sort?: PurchaseSortKey; dir?: "asc" | "desc";
 };
 
 export type PurchaseRow = {
@@ -60,7 +65,15 @@ export async function getPurchaseRegister(
       r.product.toLowerCase().includes(s) || r.vendor.toLowerCase().includes(s) || String(r.bill_no).toLowerCase().includes(s));
   }
 
-  flat.sort((a, b) => (a.bill_date < b.bill_date ? 1 : a.bill_date > b.bill_date ? -1 : 0));
+  const sortKey = filters.sort ?? "bill_date";
+  const sortDir = filters.dir ?? (filters.sort ? "asc" : "desc");
+  flat.sort((a: any, b: any) => {
+    const av = a[sortKey], bv = b[sortKey];
+    const cmp = typeof av === "number" && typeof bv === "number"
+      ? (av as number) - (bv as number)
+      : String(av).localeCompare(String(bv));
+    return sortDir === "asc" ? cmp : -cmp;
+  });
   const total = flat.length;
   const start = Math.max(0, (page - 1) * pageSize);
   return { rows: flat.slice(start, start + pageSize), total };

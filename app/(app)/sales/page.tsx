@@ -5,6 +5,7 @@ import { SalesFilters as SalesFilterBar } from "./sales-filters";
 import { ManualSaleForm } from "./manual-sale-form";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { ExportButton } from "@/components/ui/export-button";
 import Link from "next/link";
 import { PlusCircle, Upload, ChevronLeft, ChevronRight } from "lucide-react";
 
@@ -94,6 +95,10 @@ export default async function SalesPage({ searchParams }: { searchParams: Promis
       )}
 
       <SalesFilterBar payments={meta.payments} categories={meta.categories} />
+
+      <div className="flex justify-end">
+        <ExportButton kind="sales" filters={filters} filename="romancham-sales.csv" />
+      </div>
 
       <Card className="overflow-x-auto">
         <table className="w-full whitespace-nowrap text-xs">
