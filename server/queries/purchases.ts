@@ -1,6 +1,19 @@
 import { createClient } from "@/lib/supabase/server";
 
-export async function getPurchaseRegister(orgId: string, branchId: string | null) {
+export type PurchaseFilters = {
+  search?: string; vendor?: string; from?: string; to?: string; invoice?: string; category?: string;
+};
+
+export type PurchaseRow = {
+  id: string; payment_mode: string | null; vendor: string; location: string;
+  bill_no: string; bill_date: string; category: string; product: string;
+  uom: string; qty: number; rate: number; without_gst: number; with_gst: number;
+};
+
+export async function getPurchaseRegister(
+  orgId: string, branchId: string | null,
+  filters: PurchaseFilters = {}, page = 1, pageSize = 50,
+): Promise<{ rows: PurchaseRow[]; total: number }> {
   const supabase = await createClient();
   let q = supabase
     .from("purchase_items")
@@ -9,14 +22,60 @@ export async function getPurchaseRegister(orgId: string, branchId: string | null
       ingredients(name),
       purchases!inner(bill_no, bill_date, payment_mode, org_id, branch_id, vendors(name), branches(name))
     `)
-    .eq("purchases.org_id", orgId);
+    .eq("purchases.org_id", orgId)
+    .limit(5000);
   if (branchId) q = q.eq("purchases.branch_id", branchId);
+  if (filters.from) q = q.gte("purchases.bill_date", filters.from);
+  if (filters.to) q = q.lte("purchases.bill_date", filters.to);
   const { data } = await q;
-  return (data ?? []).slice().sort((a: any, b: any) => {
-    const da = a.purchases?.bill_date ?? "";
-    const db = b.purchases?.bill_date ?? "";
-    return da < db ? 1 : da > db ? -1 : 0;
+
+  let flat: PurchaseRow[] = (data ?? []).map((r: any) => {
+    const qty = Number(r.qty) || 0;
+    const rate = Number(r.rate) || 0;
+    return {
+      id: r.id,
+      payment_mode: r.purchases?.payment_mode ?? null,
+      vendor: r.purchases?.vendors?.name ?? "—",
+      location: r.purchases?.branches?.name ?? "—",
+      bill_no: r.purchases?.bill_no ?? "—",
+      bill_date: r.purchases?.bill_date ?? "—",
+      category: r.category ?? "—",
+      product: r.ingredients?.name ?? "—",
+      uom: r.uom ?? "—",
+      qty, rate,
+      without_gst: qty * rate,
+      with_gst: Number(r.line_total) || 0,
+    };
   });
+
+  if (filters.vendor) flat = flat.filter((r) => r.vendor === filters.vendor);
+  if (filters.category) flat = flat.filter((r) => r.category === filters.category);
+  if (filters.invoice) {
+    const s = filters.invoice.toLowerCase();
+    flat = flat.filter((r) => String(r.bill_no).toLowerCase().includes(s));
+  }
+  if (filters.search) {
+    const s = filters.search.toLowerCase();
+    flat = flat.filter((r) =>
+      r.product.toLowerCase().includes(s) || r.vendor.toLowerCase().includes(s) || String(r.bill_no).toLowerCase().includes(s));
+  }
+
+  flat.sort((a, b) => (a.bill_date < b.bill_date ? 1 : a.bill_date > b.bill_date ? -1 : 0));
+  const total = flat.length;
+  const start = Math.max(0, (page - 1) * pageSize);
+  return { rows: flat.slice(start, start + pageSize), total };
+}
+
+export async function getPurchaseMeta(orgId: string) {
+  const supabase = await createClient();
+  const [{ data: vendors }, { data: cats }] = await Promise.all([
+    supabase.from("vendors").select("name").eq("org_id", orgId).eq("is_active", true).order("name"),
+    supabase.from("categories").select("name").eq("org_id", orgId).eq("is_active", true).order("name"),
+  ]);
+  return {
+    vendors: [...new Set((vendors ?? []).map((v: any) => v.name).filter(Boolean))],
+    categories: [...new Set((cats ?? []).map((c: any) => c.name).filter(Boolean))],
+  };
 }
 
 export async function getPurchaseFormData(orgId: string) {

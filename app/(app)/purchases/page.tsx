@@ -1,19 +1,25 @@
 import Link from "next/link";
 import { getActiveContext } from "@/lib/auth/session";
-import { getPurchaseRegister, getPurchaseReadiness } from "@/server/queries/purchases";
-import { Card } from "@/components/ui/card";
+import { getPurchaseRegister, getPurchaseReadiness, getPurchaseMeta, type PurchaseFilters } from "@/server/queries/purchases";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { OnboardingChecklist } from "@/components/ui/onboarding-checklist";
-import { inr } from "@/lib/utils";
+import { PurchasesTable } from "./purchases-table";
+import { PurchasesFilters } from "./purchases-filters";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
-const modeLabel = (m: string | null) => (m === "petty_cash" ? "Petty Cash" : m === "credit" ? "Credit" : "—");
+const PAGE_SIZE = 50;
 
-export default async function PurchasesPage() {
+export default async function PurchasesPage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
   const ctx = await getActiveContext();
-  const rows: any[] = await getPurchaseRegister(ctx!.orgId!, ctx!.branch?.id ?? null);
+  const sp = await searchParams;
+  const page = Math.max(1, Number(sp.page) || 1);
+  const anyFilter = !!(sp.q || sp.vendor || sp.invoice || sp.from || sp.to || sp.category);
+  const filters: PurchaseFilters = { search: sp.q, vendor: sp.vendor, invoice: sp.invoice, from: sp.from, to: sp.to, category: sp.category };
 
-  if (rows.length === 0) {
+  const { rows, total } = await getPurchaseRegister(ctx!.orgId!, ctx!.branch?.id ?? null, filters, page, PAGE_SIZE);
+
+  // Empty state (no purchases at all, no filters) → onboarding
+  if (total === 0 && !anyFilter) {
     const ready = await getPurchaseReadiness(ctx!.orgId!);
     return (
       <div className="space-y-4">
@@ -34,58 +40,45 @@ export default async function PurchasesPage() {
     );
   }
 
+  const meta = await getPurchaseMeta(ctx!.orgId!);
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const qs = (p: number) => {
+    const params = new URLSearchParams();
+    if (sp.q) params.set("q", sp.q);
+    if (sp.vendor) params.set("vendor", sp.vendor);
+    if (sp.invoice) params.set("invoice", sp.invoice);
+    if (sp.from) params.set("from", sp.from);
+    if (sp.to) params.set("to", sp.to);
+    if (sp.category) params.set("category", sp.category);
+    params.set("page", String(p));
+    return `/purchases?${params.toString()}`;
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">Purchases</h1>
         <Link href="/purchases/new"><Button>+ New Purchase</Button></Link>
       </div>
-      <Card className="overflow-x-auto">
-        <table className="w-full whitespace-nowrap text-sm">
-          <thead className="border-b bg-muted/50 text-left">
-            <tr>
-              <th className="px-3 py-2 font-medium">Petty cash/Credit</th>
-              <th className="px-3 py-2 font-medium">Vendor</th>
-              <th className="px-3 py-2 font-medium">Location</th>
-              <th className="px-3 py-2 font-medium">Invoice No</th>
-              <th className="px-3 py-2 font-medium">Bill Date</th>
-              <th className="px-3 py-2 font-medium">Category</th>
-              <th className="px-3 py-2 font-medium">Product</th>
-              <th className="px-3 py-2 font-medium">UOM</th>
-              <th className="px-3 py-2 text-right font-medium">Qty</th>
-              <th className="px-3 py-2 text-right font-medium">Per pcs</th>
-              <th className="px-3 py-2 text-right font-medium">Without GST</th>
-              <th className="px-3 py-2 text-right font-medium">With GST</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((r) => {
-              const p = r.purchases || {};
-              return (
-                <tr key={r.id} className="border-b last:border-0 hover:bg-muted/40">
-                  <td className="px-3 py-2">
-                    <Badge tone={p.payment_mode === "petty_cash" ? "green" : "amber"}>{modeLabel(p.payment_mode)}</Badge>
-                  </td>
-                  <td className="px-3 py-2">{p.vendors?.name ?? "—"}</td>
-                  <td className="px-3 py-2">{p.branches?.name ?? "—"}</td>
-                  <td className="px-3 py-2">{p.bill_no ?? "—"}</td>
-                  <td className="px-3 py-2">{p.bill_date ?? "—"}</td>
-                  <td className="px-3 py-2">{r.category ?? "—"}</td>
-                  <td className="px-3 py-2 font-medium">{r.ingredients?.name ?? "—"}</td>
-                  <td className="px-3 py-2">{r.uom ?? "—"}</td>
-                  <td className="px-3 py-2 text-right tabular-nums">{r.qty}</td>
-                  <td className="px-3 py-2 text-right tabular-nums">{inr(r.rate)}</td>
-                  <td className="px-3 py-2 text-right tabular-nums">{inr(Number(r.qty) * Number(r.rate))}</td>
-                  <td className="px-3 py-2 text-right font-medium tabular-nums">{inr(r.line_total)}</td>
-                </tr>
-              );
-            })}
-            {rows.length === 0 && (
-              <tr><td colSpan={12} className="px-3 py-8 text-center text-muted-foreground">No purchases yet. Click &quot;New Purchase&quot; to record your first bill.</td></tr>
-            )}
-          </tbody>
-        </table>
-      </Card>
+
+      <PurchasesFilters vendors={meta.vendors} categories={meta.categories} />
+
+      <PurchasesTable rows={rows} />
+
+      {total > 0 && (
+        <div className="flex items-center justify-between text-sm text-muted-foreground">
+          <span>Showing {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, total)} of {total.toLocaleString()}</span>
+          <div className="flex items-center gap-2">
+            {page > 1
+              ? <Link href={qs(page - 1)}><Button size="sm" variant="outline"><ChevronLeft className="h-4 w-4" /> Prev</Button></Link>
+              : <Button size="sm" variant="outline" disabled><ChevronLeft className="h-4 w-4" /> Prev</Button>}
+            <span className="tabular-nums">Page {page} / {totalPages}</span>
+            {page < totalPages
+              ? <Link href={qs(page + 1)}><Button size="sm" variant="outline">Next <ChevronRight className="h-4 w-4" /></Button></Link>
+              : <Button size="sm" variant="outline" disabled>Next <ChevronRight className="h-4 w-4" /></Button>}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
