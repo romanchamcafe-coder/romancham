@@ -34,7 +34,7 @@ export default async function InventoryPage() {
 
       <Card className="overflow-x-auto">
         <Table>
-          <THead><TR><TH>Item Name</TH><TH>Category</TH><TH>UOM</TH><TH className="text-right">In Hand</TH><TH className="text-right">Stock Value</TH><TH className="text-right">Reorder</TH><TH>Status</TH></TR></THead>
+          <THead><TR><TH>Ingredient</TH><TH>Category</TH><TH>UOM</TH><TH className="text-right">In Hand</TH><TH className="text-right">Stock Value</TH><TH className="text-right">Reorder</TH><TH>Status</TH></TR></THead>
           <TBody>
             {rows.map((r) => (
               <TR key={r.id}>
@@ -47,7 +47,7 @@ export default async function InventoryPage() {
                 <TD>{badge(r.status)}</TD>
               </TR>
             ))}
-            {rows.length === 0 && <TR><TD colSpan={7} className="py-8 text-center text-muted-foreground">No purchase items yet. Add items in Item Name and record a Purchase to see stock here.</TD></TR>}
+            {rows.length === 0 && <TR><TD colSpan={7} className="py-8 text-center text-muted-foreground">No purchase items yet. Add items in Ingredients and record a Purchase to see stock here.</TD></TR>}
           </TBody>
         </Table>
       </Card>

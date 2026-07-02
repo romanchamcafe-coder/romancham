@@ -3,13 +3,13 @@ import { getSettings } from "@/server/queries/settings";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { EmptyState } from "@/components/ui/empty-state";
 import { BranchForm } from "./branch-form";
-
-const roleTone: Record<string, "green" | "amber" | "muted" | "red"> = { owner: "green", manager: "amber", accountant: "muted", staff: "muted" };
+import { Users } from "lucide-react";
 
 export default async function SettingsPage() {
   const ctx = await getActiveContext();
-  const { org, branches, members } = await getSettings(ctx!.orgId!);
+  const { org, branches } = await getSettings(ctx!.orgId!);
 
   return (
     <div className="space-y-6">
@@ -48,19 +48,12 @@ export default async function SettingsPage() {
 
       <Card>
         <CardHeader><CardTitle>Team</CardTitle></CardHeader>
-        <CardContent className="space-y-3">
-          <Table>
-            <THead><TR><TH>Member</TH><TH>Role</TH></TR></THead>
-            <TBody>
-              {members.map((m: any, idx: number) => (
-                <TR key={idx}>
-                  <TD className="font-medium">{m.profiles?.full_name ?? "—"} {m.user_id === ctx!.user.id && <span className="text-xs text-muted-foreground">(you)</span>}</TD>
-                  <TD><Badge tone={roleTone[m.role] ?? "muted"}>{m.role}</Badge></TD>
-                </TR>
-              ))}
-            </TBody>
-          </Table>
-          <p className="text-xs text-muted-foreground">Inviting new members by email needs an email provider — tell me when you want team logins and I&apos;ll set it up.</p>
+        <CardContent>
+          <EmptyState
+            icon={<Users className="h-8 w-8" />}
+            title="Team management — coming soon"
+            description="Invite managers, accountants and staff with role-based access. This feature is being finalised and will be available shortly."
+          />
         </CardContent>
       </Card>
     </div>

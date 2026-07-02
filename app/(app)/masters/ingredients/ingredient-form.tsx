@@ -15,7 +15,7 @@ export function IngredientForm({ categories, units, vendors }: { categories: Opt
   return (
     <form ref={ref} action={action} className="rounded-lg border bg-card p-4">
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="space-y-1.5"><Label>Item Name</Label><Input name="name" required placeholder="e.g. Amul Butter / Chocolate Brownie" /></div>
+        <div className="space-y-1.5"><Label>Ingredient name</Label><Input name="name" required placeholder="e.g. Amul Butter / Chocolate Brownie" /></div>
         <div className="space-y-1.5">
           <Label>Type</Label>
           <select name="material_type" defaultValue="purchase" className={sel}>

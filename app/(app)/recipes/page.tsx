@@ -15,7 +15,7 @@ export default async function RecipesPage() {
       <div className="space-y-4">
         <h1 className="text-xl font-semibold">Recipes</h1>
         <Card><CardContent className="pt-6 text-sm text-muted-foreground">
-          To build recipes you need at least one <Link href="/masters/ingredients?type=sales" className="text-primary underline">Sales item</Link> and some <Link href="/masters/ingredients?type=purchase" className="text-primary underline">Purchase items</Link> in Item Name. Add them, then come back.
+          To build recipes you need at least one <Link href="/masters/ingredients?type=sales" className="text-primary underline">Sales item</Link> and some <Link href="/masters/ingredients?type=purchase" className="text-primary underline">Purchase items</Link> in Ingredients. Add them, then come back.
         </CardContent></Card>
       </div>
     );

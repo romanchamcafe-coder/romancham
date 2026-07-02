@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 
 export async function getInventory(orgId: string, branchId: string | null) {
+  try {
   const supabase = await createClient();
   const ingQ = supabase.from("ingredients")
     .select("id, name, category_id, base_unit_id, reorder_level")
@@ -33,11 +34,20 @@ export async function getInventory(orgId: string, branchId: string | null) {
       qty, value: valMap.get(i.id) ?? 0, reorder, status,
     };
   });
+  } catch (e) {
+    console.error("getInventory failed", e);
+    return [];
+  }
 }
 
 export async function getAdjustItems(orgId: string) {
-  const supabase = await createClient();
-  const { data } = await supabase.from("ingredients").select("id, name")
-    .eq("org_id", orgId).eq("is_active", true).in("material_type", ["purchase", "both"]).order("name");
-  return data ?? [];
+  try {
+    const supabase = await createClient();
+    const { data } = await supabase.from("ingredients").select("id, name")
+      .eq("org_id", orgId).eq("is_active", true).in("material_type", ["purchase", "both"]).order("name");
+    return data ?? [];
+  } catch (e) {
+    console.error("getAdjustItems failed", e);
+    return [];
+  }
 }

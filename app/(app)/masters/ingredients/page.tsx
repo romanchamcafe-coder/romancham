@@ -20,7 +20,7 @@ export default async function MaterialsPage({ searchParams }: { searchParams: Pr
 
   return (
     <div className="space-y-4">
-      <h1 className="text-xl font-semibold">Item Name</h1>
+      <h1 className="text-xl font-semibold">Ingredients</h1>
       <p className="text-sm text-muted-foreground">Your item master. <b>Purchase</b> items show in Purchases; <b>Sales</b> items are products you sell (they appear in the sales report).</p>
       <IngredientForm categories={categories} units={units} vendors={vendors} />
 
@@ -35,7 +35,7 @@ export default async function MaterialsPage({ searchParams }: { searchParams: Pr
 
       <Card className="overflow-x-auto">
         <Table>
-          <THead><TR><TH>Item Name</TH><TH>Type</TH><TH>Category</TH><TH>UOM</TH><TH>GST %</TH><TH>Reorder</TH><TH>Default Vendor</TH><TH></TH></TR></THead>
+          <THead><TR><TH>Ingredient</TH><TH>Type</TH><TH>Category</TH><TH>UOM</TH><TH>GST %</TH><TH>Reorder</TH><TH>Default Vendor</TH><TH></TH></TR></THead>
           <TBody>
             {items.map((i: any) => (
               <TR key={i.id}>
