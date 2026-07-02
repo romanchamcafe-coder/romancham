@@ -83,7 +83,7 @@ export function SalesUpload({ branchId }: { branchId: string }) {
     if (!rows?.length) return;
     setErr(null);
     start(async () => {
-      const res = await importPosSales(rows, branchId);
+      const res = await importPosSales(rows, branchId, fileName);
       if (res?.error) setErr(res.error);
       else { setMsg(`Imported ${res.imported} rows. Same-day data was replaced.`); setRows(null); setFileName(""); if (inputRef.current) inputRef.current.value = ""; router.refresh(); }
     });

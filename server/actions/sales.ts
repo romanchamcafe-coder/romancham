@@ -9,7 +9,9 @@ const FIELDS = ["sale_date","date_raw","location","invoice_no","payment_type","o
   "server_name","covers","variation","category","group_name","hsn","phone","customer_name","address",
   "gst","assign_to","non_taxable","cgst_rate","cgst_amount","sgst_rate","sgst_amount"];
 
-export async function importPosSales(rows: Record<string, any>[], branchIdArg?: string): Promise<ActionState & { imported?: number }> {
+export async function importPosSales(
+  rows: Record<string, any>[], branchIdArg?: string, fileName?: string,
+): Promise<ActionState & { imported?: number }> {
   const ctx = await getActiveContext();
   if (!ctx?.orgId) return { error: "No active organization" };
   const branchId = branchIdArg || ctx.branch?.id;
@@ -37,7 +39,56 @@ export async function importPosSales(rows: Record<string, any>[], branchIdArg?: 
     if (error) return { error: error.message, imported };
     imported += chunk.length;
   }
+
+  // record import history (best-effort; never block the import result)
+  try {
+    await supabase.from("pos_imports").insert({
+      org_id: ctx.orgId, branch_id: branchId, file_path: fileName ?? "sales.csv",
+      status: "done", rows_total: rows.length, rows_ok: imported,
+      mapping: { dates, batch },
+    });
+  } catch { /* ignore logging failures */ }
+
   revalidatePath("/sales");
   revalidatePath("/dashboard");
   return { ok: true, imported };
+}
+
+const num = (v: any) => { const n = Number(String(v ?? "").replace(/[^0-9.\-]/g, "")); return isNaN(n) ? null : n; };
+
+export type ManualSaleInput = {
+  sale_date: string; item_name: string; category?: string; payment_type?: string;
+  invoice_no?: string; location?: string; qty?: string; price?: string;
+  without_gst?: string; tax?: string; final_total?: string;
+};
+
+export async function createManualSale(input: ManualSaleInput): Promise<ActionState> {
+  const ctx = await getActiveContext();
+  if (!ctx?.orgId) return { error: "No active organization" };
+  const branchId = ctx.branch?.id;
+  if (!branchId) return { error: "No location/branch selected" };
+
+  const item = (input.item_name || "").trim();
+  if (!item) return { error: "Item name is required" };
+  const date = (input.sale_date || "").trim() || new Date().toISOString().slice(0, 10);
+  const total = num(input.final_total);
+  if (total === null) return { error: "Enter a valid final total" };
+
+  const supabase = await createClient();
+  const { error } = await supabase.from("pos_sales").insert({
+    org_id: ctx.orgId, branch_id: branchId, batch_id: crypto.randomUUID(),
+    sale_date: date, date_raw: date,
+    item_name: item,
+    category: (input.category || "").trim() || null,
+    payment_type: (input.payment_type || "").trim() || null,
+    invoice_no: (input.invoice_no || "").trim() || null,
+    location: (input.location || "").trim() || null,
+    qty: num(input.qty), price: num(input.price),
+    without_gst: num(input.without_gst), tax: num(input.tax), final_total: total,
+    status: "Manual",
+  });
+  if (error) return { error: error.message };
+  revalidatePath("/sales");
+  revalidatePath("/dashboard");
+  return { ok: true };
 }
