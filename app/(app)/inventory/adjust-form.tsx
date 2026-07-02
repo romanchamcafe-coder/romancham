@@ -40,22 +40,22 @@ export function AdjustForm({ items }: { items: Item[] }) {
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
         <div className="space-y-1.5">
           <Label>Item</Label>
-          <select value={ingredientId} onChange={(e) => setIngredientId(e.target.value)} className={sel}>
+          <select value={ingredientId} onChange={(e) => setIngredientId(e.target.value)} className={sel} aria-label="Item">
             <option value="">Select…</option>
             {items.map((i) => <option key={i.id} value={i.id}>{i.name}</option>)}
           </select>
         </div>
         <div className="space-y-1.5">
           <Label>Direction</Label>
-          <select value={direction} onChange={(e) => setDirection(e.target.value)} className={sel}>
+          <select value={direction} onChange={(e) => setDirection(e.target.value)} className={sel} aria-label="Adjustment direction">
             <option value="add">Add (+)</option>
             <option value="reduce">Reduce (−)</option>
           </select>
         </div>
-        <div className="space-y-1.5"><Label>Quantity</Label><Input type="number" step="0.0001" value={qty} onChange={(e) => setQty(e.target.value)} /></div>
+        <div className="space-y-1.5"><Label>Quantity</Label><Input type="number" step="0.0001" value={qty} onChange={(e) => setQty(e.target.value)} aria-label="Quantity" /></div>
         <div className="space-y-1.5">
           <Label>Reason</Label>
-          <select value={reason} onChange={(e) => setReason(e.target.value)} className={sel}>
+          <select value={reason} onChange={(e) => setReason(e.target.value)} className={sel} aria-label="Reason">
             <option value="count">Physical count</option>
             <option value="damage">Damage</option>
             <option value="expiry">Expiry</option>
@@ -63,7 +63,7 @@ export function AdjustForm({ items }: { items: Item[] }) {
             <option value="other">Other</option>
           </select>
         </div>
-        <div className="space-y-1.5"><Label>Note</Label><Input value={note} onChange={(e) => setNote(e.target.value)} placeholder="optional" /></div>
+        <div className="space-y-1.5"><Label>Note</Label><Input value={note} onChange={(e) => setNote(e.target.value)} placeholder="optional" aria-label="Note" /></div>
       </div>
       <div className="flex items-center gap-3">
         <Button onClick={submit} disabled={pending}>{pending ? "Saving…" : "Save Adjustment"}</Button>

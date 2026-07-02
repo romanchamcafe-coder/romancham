@@ -89,25 +89,25 @@ export function PurchaseForm({ vendors, ingredients, branches, defaultBranchId }
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
         <div className="space-y-1.5">
           <Label>Petty cash/Credit</Label>
-          <select value={paymentMode} onChange={(e) => setPaymentMode(e.target.value)} className={fieldCls}>
+          <select value={paymentMode} onChange={(e) => setPaymentMode(e.target.value)} className={fieldCls} aria-label="Payment mode: petty cash or credit">
             <option value="credit">Credit</option><option value="petty_cash">Petty Cash</option>
           </select>
         </div>
         <div className="space-y-1.5">
           <Label>Vendor</Label>
-          <select value={vendorId} onChange={(e) => setVendorId(e.target.value)} className={fieldCls}>
+          <select value={vendorId} onChange={(e) => setVendorId(e.target.value)} className={fieldCls} aria-label="Vendor">
             <option value="">Select vendor…</option>
             {vendors.map((v) => <option key={v.id} value={v.id}>{v.name}</option>)}
           </select>
         </div>
         <div className="space-y-1.5">
           <Label>Location</Label>
-          <select value={branchId} onChange={(e) => setBranchId(e.target.value)} className={fieldCls}>
+          <select value={branchId} onChange={(e) => setBranchId(e.target.value)} className={fieldCls} aria-label="Location">
             {branches.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
           </select>
         </div>
-        <div className="space-y-1.5"><Label>Invoice No</Label><Input className="h-9" value={billNo} onChange={(e) => setBillNo(e.target.value)} placeholder="optional" /></div>
-        <div className="space-y-1.5"><Label>Bill Date</Label><Input className="h-9" type="date" value={billDate} onChange={(e) => setBillDate(e.target.value)} /></div>
+        <div className="space-y-1.5"><Label>Invoice No</Label><Input className="h-9" value={billNo} onChange={(e) => setBillNo(e.target.value)} placeholder="optional" aria-label="Invoice number" /></div>
+        <div className="space-y-1.5"><Label>Bill Date</Label><Input className="h-9" type="date" value={billDate} onChange={(e) => setBillDate(e.target.value)} aria-label="Bill date" /></div>
       </div>
 
       <div className="overflow-x-auto rounded-lg border">
@@ -127,18 +127,18 @@ export function PurchaseForm({ vendors, ingredients, branches, defaultBranchId }
           <tbody>
             {lines.map((l, i) => (
               <tr key={i} className="border-b last:border-0">
-                <td className="p-1.5"><Input className="h-9 w-28" value={l.category} onChange={(e) => update(i, { category: e.target.value })} placeholder="auto" /></td>
+                <td className="p-1.5"><Input className="h-9 w-28" value={l.category} onChange={(e) => update(i, { category: e.target.value })} placeholder="auto" aria-label="Line category" /></td>
                 <td className="p-1.5">
-                  <select value={l.ingredient_id} onChange={(e) => onProduct(i, e.target.value)} className={fieldCls + " min-w-44"}>
+                  <select value={l.ingredient_id} onChange={(e) => onProduct(i, e.target.value)} className={fieldCls + " min-w-44"} aria-label="Product">
                     <option value="">Select…</option>
                     {ingredients.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
                   </select>
                 </td>
-                <td className="p-1.5"><Input className="h-9 w-20" value={l.uom} onChange={(e) => update(i, { uom: e.target.value })} placeholder="auto" /></td>
-                <td className="p-1.5"><Input className="h-9 w-20" type="number" step="0.0001" value={l.qty} onChange={(e) => recalcWith(i, { qty: e.target.value })} /></td>
-                <td className="p-1.5"><Input className="h-9 w-24" type="number" step="0.01" value={l.rate} onChange={(e) => recalcWith(i, { rate: e.target.value })} /></td>
+                <td className="p-1.5"><Input className="h-9 w-20" value={l.uom} onChange={(e) => update(i, { uom: e.target.value })} placeholder="auto" aria-label="Unit of measure" /></td>
+                <td className="p-1.5"><Input className="h-9 w-20" type="number" step="0.0001" value={l.qty} onChange={(e) => recalcWith(i, { qty: e.target.value })} aria-label="Quantity" /></td>
+                <td className="p-1.5"><Input className="h-9 w-24" type="number" step="0.01" value={l.rate} onChange={(e) => recalcWith(i, { rate: e.target.value })} aria-label="Rate per unit" /></td>
                 <td className="p-1.5 text-right tabular-nums">{inr(withoutGst(l))}</td>
-                <td className="p-1.5"><Input className="h-9 w-28" type="number" step="0.01" value={l.with_gst} onChange={(e) => update(i, { with_gst: e.target.value })} placeholder="incl. GST" /></td>
+                <td className="p-1.5"><Input className="h-9 w-28" type="number" step="0.01" value={l.with_gst} onChange={(e) => update(i, { with_gst: e.target.value })} placeholder="incl. GST" aria-label="Amount including GST" /></td>
                 <td className="p-1.5 text-center">
                   {lines.length > 1 && (
                     <button type="button" onClick={() => setLines((ls) => ls.filter((_, idx) => idx !== i))} className="text-muted-foreground hover:text-destructive">
