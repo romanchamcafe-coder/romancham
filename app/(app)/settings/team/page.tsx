@@ -3,14 +3,13 @@ import { getSettings } from "@/server/queries/settings";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { EmptyState } from "@/components/ui/empty-state";
 import { BranchForm } from "./branch-form";
 import { OrgSettingsForm } from "./org-settings-form";
-import { Users } from "lucide-react";
+import { TeamManager } from "./team-manager";
 
 export default async function SettingsPage() {
   const ctx = await getActiveContext();
-  const { org, branches } = await getSettings(ctx!.orgId!);
+  const { org, branches, members } = await getSettings(ctx!.orgId!);
 
   return (
     <div className="space-y-6">
@@ -45,10 +44,10 @@ export default async function SettingsPage() {
       <Card>
         <CardHeader><CardTitle>Team</CardTitle></CardHeader>
         <CardContent>
-          <EmptyState
-            icon={<Users className="h-8 w-8" />}
-            title="Team management — coming soon"
-            description="Invite managers, accountants and staff with role-based access. This feature is being finalised and will be available shortly."
+          <TeamManager
+            members={(members ?? []).map((m: any) => ({ user_id: m.user_id, role: m.role, name: m.profiles?.full_name ?? "" }))}
+            currentUserId={ctx!.user.id}
+            canManage={ctx!.role === "owner"}
           />
         </CardContent>
       </Card>
