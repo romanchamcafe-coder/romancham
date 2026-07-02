@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { getActiveContext } from "@/lib/auth/session";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Topbar } from "@/components/layout/topbar";
+import { Toaster } from "@/components/ui/toaster";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const ctx = await getActiveContext();
@@ -15,6 +16,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         <Topbar orgName={ctx.org.name} branches={ctx.branches ?? []} activeBranch={ctx.branch?.id ?? null} />
         <main className="flex-1 p-6">{children}</main>
       </div>
+      <Toaster />
     </div>
   );
 }

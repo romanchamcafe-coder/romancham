@@ -3,8 +3,8 @@ import { createClient } from "@/lib/supabase/server";
 export async function getMaterialFormData(orgId: string) {
   const supabase = await createClient();
   const [{ data: categories }, { data: units }, { data: vendors }] = await Promise.all([
-    supabase.from("categories").select("id, name").eq("org_id", orgId).eq("type", "ingredient").order("name"),
-    supabase.from("units").select("id, name, abbr").eq("org_id", orgId).order("name"),
+    supabase.from("categories").select("id, name").eq("org_id", orgId).eq("type", "ingredient").eq("is_active", true).order("name"),
+    supabase.from("units").select("id, name, abbr").eq("org_id", orgId).eq("is_active", true).order("name"),
     supabase.from("vendors").select("id, name").eq("org_id", orgId).eq("is_active", true).order("name"),
   ]);
   return { categories: categories ?? [], units: units ?? [], vendors: vendors ?? [] };

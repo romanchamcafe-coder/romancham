@@ -13,6 +13,6 @@ export async function getExpenses(orgId: string, branchId: string | null) {
 export async function getExpenseCategories(orgId: string) {
   const supabase = await createClient();
   const { data } = await supabase.from("categories").select("id, name")
-    .eq("org_id", orgId).eq("type", "expense").order("name");
+    .eq("org_id", orgId).eq("type", "expense").eq("is_active", true).order("name");
   return data ?? [];
 }
