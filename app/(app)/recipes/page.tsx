@@ -4,6 +4,7 @@ import { getRecipeData } from "@/server/queries/recipes";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
 import { RecipeBuilder } from "./recipe-builder";
+import { OnboardingChecklist } from "@/components/ui/onboarding-checklist";
 import { inr } from "@/lib/utils";
 
 export default async function RecipesPage() {
@@ -14,9 +15,16 @@ export default async function RecipesPage() {
     return (
       <div className="space-y-4">
         <h1 className="text-xl font-semibold">Recipes</h1>
-        <Card><CardContent className="pt-6 text-sm text-muted-foreground">
-          To build recipes you need at least one <Link href="/masters/ingredients?type=sales" className="text-primary underline">Sales item</Link> and some <Link href="/masters/ingredients?type=purchase" className="text-primary underline">Purchase items</Link> in Ingredients. Add them, then come back.
-        </CardContent></Card>
+        <p className="text-sm text-muted-foreground">Recipes link each menu (Sales) item to what it's made of, so Romancham can calculate your Food Cost %.</p>
+        <OnboardingChecklist
+          title="Set up recipes in 3 steps"
+          description="You need your menu items and their ingredients in place before building recipes."
+          steps={[
+            { title: "Add your menu (Sales) items", description: "Create the dishes/drinks you sell as Sales items in Ingredients.", href: "/masters/ingredients?type=sales", cta: "Add sales items", done: salesItems.length > 0 },
+            { title: "Add your Purchase items", description: "Add the raw materials each recipe consumes (flour, milk, sugar…).", href: "/masters/ingredients?type=purchase", cta: "Add purchase items", done: purchaseItems.length > 0 },
+            { title: "Build your first recipe", description: "Map each sales item to its ingredients and quantities. Recipe cost feeds Food Cost %.", href: "/recipes", cta: "Build recipe", done: false },
+          ]}
+        />
       </div>
     );
   }

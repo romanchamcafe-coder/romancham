@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { getActiveContext } from "@/lib/auth/session";
-import { getPurchaseRegister } from "@/server/queries/purchases";
+import { getPurchaseRegister, getPurchaseReadiness } from "@/server/queries/purchases";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { OnboardingChecklist } from "@/components/ui/onboarding-checklist";
 import { inr } from "@/lib/utils";
 
 const modeLabel = (m: string | null) => (m === "petty_cash" ? "Petty Cash" : m === "credit" ? "Credit" : "—");
@@ -11,6 +12,27 @@ const modeLabel = (m: string | null) => (m === "petty_cash" ? "Petty Cash" : m =
 export default async function PurchasesPage() {
   const ctx = await getActiveContext();
   const rows: any[] = await getPurchaseRegister(ctx!.orgId!, ctx!.branch?.id ?? null);
+
+  if (rows.length === 0) {
+    const ready = await getPurchaseReadiness(ctx!.orgId!);
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h1 className="text-xl font-semibold">Purchases</h1>
+          <Link href="/purchases/new"><Button>+ New Purchase</Button></Link>
+        </div>
+        <OnboardingChecklist
+          title="Let's record your first purchase"
+          description="Purchases feed your inventory, FIFO costing and GST. Complete these steps to get started."
+          steps={[
+            { title: "Add the items you buy", description: "Create your purchase items (raw materials, packaging) under Ingredients.", href: "/masters/ingredients?type=purchase", cta: "Add items", done: ready.ingredients > 0 },
+            { title: "Add a vendor", description: "Add at least one supplier so GST can auto-split and pricing can pre-fill.", href: "/masters/vendors", cta: "Add vendor", done: ready.vendors > 0 },
+            { title: "Record a purchase bill", description: "Enter a bill with its line items — stock and costs update automatically.", href: "/purchases/new", cta: "New purchase", done: false },
+          ]}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">

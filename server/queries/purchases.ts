@@ -59,3 +59,14 @@ export async function getPurchaseFormData(orgId: string) {
 
   return { vendors: vendors ?? [], branches: branches ?? [], ingredients };
 }
+
+export async function getPurchaseReadiness(orgId: string) {
+  const supabase = await createClient();
+  const [ing, ven] = await Promise.all([
+    supabase.from("ingredients").select("id", { count: "exact", head: true })
+      .eq("org_id", orgId).eq("is_active", true).in("material_type", ["purchase", "both"]),
+    supabase.from("vendors").select("id", { count: "exact", head: true })
+      .eq("org_id", orgId).eq("is_active", true),
+  ]);
+  return { ingredients: ing.count ?? 0, vendors: ven.count ?? 0 };
+}

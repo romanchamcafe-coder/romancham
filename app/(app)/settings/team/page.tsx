@@ -5,6 +5,7 @@ import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
 import { BranchForm } from "./branch-form";
+import { OrgSettingsForm } from "./org-settings-form";
 import { Users } from "lucide-react";
 
 export default async function SettingsPage() {
@@ -17,13 +18,8 @@ export default async function SettingsPage() {
 
       <Card>
         <CardHeader><CardTitle>Organization</CardTitle></CardHeader>
-        <CardContent className="text-sm">
-          <div className="grid gap-2 sm:grid-cols-2">
-            <div><span className="text-muted-foreground">Name:</span> <b>{org?.name}</b></div>
-            <div><span className="text-muted-foreground">Plan:</span> {org?.plan ?? "free"}</div>
-            <div><span className="text-muted-foreground">GSTIN:</span> {org?.gstin ?? "—"}</div>
-            <div><span className="text-muted-foreground">State code:</span> {org?.state_code ?? "—"}</div>
-          </div>
+        <CardContent>
+          <OrgSettingsForm org={org ?? {}} />
         </CardContent>
       </Card>
 
