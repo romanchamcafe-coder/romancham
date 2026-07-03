@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { OnboardingChecklist } from "@/components/ui/onboarding-checklist";
 import { PurchasesTable } from "./purchases-table";
 import { PurchasesFilters } from "./purchases-filters";
+import { NewPurchaseButton } from "./new-purchase-button";
 import { ExportButton } from "@/components/ui/export-button";
 import type { PurchaseSortKey } from "@/server/queries/purchases";
 import { ChevronLeft, ChevronRight } from "lucide-react";
@@ -30,7 +31,7 @@ export default async function PurchasesPage({ searchParams }: { searchParams: Pr
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h1 className="text-xl font-semibold">Purchases</h1>
-          <Link href="/purchases/new"><Button>+ New Purchase</Button></Link>
+          <NewPurchaseButton disabled={ready.ingredients === 0 || ready.vendors === 0} />
         </div>
         <OnboardingChecklist
           title="Let's record your first purchase"
@@ -63,7 +64,7 @@ export default async function PurchasesPage({ searchParams }: { searchParams: Pr
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">Purchases</h1>
-        <Link href="/purchases/new"><Button>+ New Purchase</Button></Link>
+        <NewPurchaseButton disabled={false} />
       </div>
 
       <PurchasesFilters vendors={meta.vendors} categories={meta.categories} />

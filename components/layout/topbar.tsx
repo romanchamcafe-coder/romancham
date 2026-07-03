@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { signOut } from "@/server/actions/auth";
 import { Button } from "@/components/ui/button";
+import { MobileNav } from "./mobile-nav";
 import { LogOut } from "lucide-react";
 
 export function Topbar({ orgName, branches, activeBranch }: {
@@ -25,7 +26,10 @@ export function Topbar({ orgName, branches, activeBranch }: {
 
   return (
     <header className="flex h-14 items-center justify-between border-b bg-card px-4">
-      <div className="font-semibold">{orgName}</div>
+      <div className="flex items-center gap-2">
+        <MobileNav />
+        <div className="font-semibold">{orgName}</div>
+      </div>
       <div className="flex items-center gap-3">
         <label htmlFor="branch-switch" className="sr-only">Select branch</label>
         <select id="branch-switch" aria-label="Select branch" value={activeBranch ?? ""} onChange={(e) => setBranch(e.target.value)}

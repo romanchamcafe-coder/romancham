@@ -1,5 +1,5 @@
 import { getActiveContext } from "@/lib/auth/session";
-import { getDashboard } from "@/server/queries/dashboard";
+import { getDashboard, getActivityCounts } from "@/server/queries/dashboard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -7,7 +7,7 @@ import { RevenueTrend, BranchPerf } from "@/components/charts/dashboard-charts";
 import { DateRangePicker } from "@/components/dashboard/date-range-picker";
 import { resolveRange, type RangeKey } from "@/lib/date-ranges";
 import { inr } from "@/lib/utils";
-import { TrendingUp, LineChart, BarChart3, Package } from "lucide-react";
+import { TrendingUp, LineChart, BarChart3, Package, Info } from "lucide-react";
 
 const pct = (cur: number, prev: number) => (prev > 0 ? Math.round(((cur - prev) / prev) * 100) : cur > 0 ? 100 : 0);
 
@@ -24,10 +24,19 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
   const key = ((sp.range as RangeKey) || "30d");
   const r = resolveRange(key, sp.from, sp.to);
 
-  const [m, prev] = await Promise.all([
+  const [m, prev, counts] = await Promise.all([
     getDashboard(ctx.orgId, ctx.branch?.id ?? null, r.from, r.to),
     getDashboard(ctx.orgId, ctx.branch?.id ?? null, r.prevFrom, r.prevTo),
+    getActivityCounts(ctx.orgId, ctx.branch?.id ?? null),
   ]);
+
+  const allZero = m.revenue === 0 && m.purchases === 0 && m.gross_profit === 0 && m.net_profit === 0;
+  const zeroBanner = !allZero ? null
+    : counts.sales > 0
+      ? "No data in this period. Try changing the date range — you have sales recorded on other dates."
+      : counts.purchases > 0
+        ? "No data in this period. Try changing the date range — you have records on other dates."
+        : "Get started by recording your first sale or purchase.";
 
   const foodTone = m.food_cost_pct === 0 ? "muted" : m.food_cost_pct <= 35 ? "green" : m.food_cost_pct <= 40 ? "amber" : "red";
   const hasTrend = m.daily_trend.length > 0;
@@ -65,6 +74,13 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
           </Card>
         ))}
       </div>
+
+      {zeroBanner && (
+        <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          <Info className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
+          <span>{zeroBanner}</span>
+        </div>
+      )}
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Card><CardHeader><CardTitle>Daily Revenue</CardTitle></CardHeader>

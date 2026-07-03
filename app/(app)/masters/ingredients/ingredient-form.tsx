@@ -1,5 +1,5 @@
 "use client";
-import { useActionState, useRef, useEffect } from "react";
+import { useActionState, useRef, useEffect, useState } from "react";
 import { createIngredient } from "@/server/actions/ingredients";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,7 +11,8 @@ const sel = "h-10 w-full rounded-md border border-input bg-background px-2 text-
 export function IngredientForm({ categories, units, vendors }: { categories: Opt[]; units: Opt[]; vendors: Opt[] }) {
   const [state, action, pending] = useActionState(createIngredient, null);
   const ref = useRef<HTMLFormElement>(null);
-  useEffect(() => { if (state?.ok) ref.current?.reset(); }, [state]);
+  const [uomError, setUomError] = useState("");
+  useEffect(() => { if (state?.ok) { ref.current?.reset(); setUomError(""); } }, [state]);
   return (
     <form ref={ref} action={action} className="rounded-lg border bg-card p-4">
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -31,10 +32,22 @@ export function IngredientForm({ categories, units, vendors }: { categories: Opt
           </select>
         </div>
         <div className="space-y-1.5">
-          <Label>UOM</Label>
-          <select name="base_unit_id" className={sel} aria-label="Unit of measure"><option value="">—</option>
+          <Label>UOM <span className="text-destructive">*</span></Label>
+          <select
+            name="base_unit_id"
+            required
+            aria-required="true"
+            aria-invalid={!!uomError}
+            aria-describedby={uomError ? "uom-error" : undefined}
+            className={sel}
+            aria-label="Unit of measure"
+            onInvalid={(e) => { e.preventDefault(); setUomError("Please select a Unit of Measure (UOM)"); }}
+            onChange={(e) => { if (e.target.value) setUomError(""); }}
+          >
+            <option value="">—</option>
             {units.map((u) => <option key={u.id} value={u.id}>{u.name}{u.abbr ? ` (${u.abbr})` : ""}</option>)}
           </select>
+          {uomError && <p id="uom-error" className="text-sm text-destructive">{uomError}</p>}
         </div>
         <div className="space-y-1.5">
           <Label>Default vendor</Label>

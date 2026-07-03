@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { BranchForm } from "./branch-form";
 import { OrgSettingsForm } from "./org-settings-form";
 import { TeamManager } from "./team-manager";
+import { InviteTeammate } from "./invite-teammate";
 
 export default async function SettingsPage() {
   const ctx = await getActiveContext();
@@ -54,6 +55,7 @@ export default async function SettingsPage() {
             currentUserId={ctx!.user.id}
             canManage={ctx!.role === "owner"}
           />
+          <InviteTeammate />
         </CardContent>
       </Card>
     </div>

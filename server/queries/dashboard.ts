@@ -18,3 +18,12 @@ export type DashboardMetrics = {
   daily_trend: { d: string; revenue: number }[];
   branch_perf: { name: string; revenue: number }[];
 };
+
+export async function getActivityCounts(orgId: string, branchId: string | null) {
+  const supabase = await createClient();
+  let sq = supabase.from("pos_sales").select("id", { count: "exact", head: true }).eq("org_id", orgId);
+  let pq = supabase.from("purchases").select("id", { count: "exact", head: true }).eq("org_id", orgId);
+  if (branchId) { sq = sq.eq("branch_id", branchId); pq = pq.eq("branch_id", branchId); }
+  const [{ count: sales }, { count: purchases }] = await Promise.all([sq, pq]);
+  return { sales: sales ?? 0, purchases: purchases ?? 0 };
+}

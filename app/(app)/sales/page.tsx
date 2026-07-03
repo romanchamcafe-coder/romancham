@@ -3,22 +3,10 @@ import { getSalesRegister, getSalesMeta, getSalesImports, type SalesFilters } fr
 import { SalesUpload } from "./sales-upload";
 import { SalesFilters as SalesFilterBar } from "./sales-filters";
 import { ManualSaleForm } from "./manual-sale-form";
-import { Card } from "@/components/ui/card";
+import { SalesTable } from "./sales-table";
 import { Button } from "@/components/ui/button";
-import { ExportButton } from "@/components/ui/export-button";
 import Link from "next/link";
 import { PlusCircle, Upload, ChevronLeft, ChevronRight } from "lucide-react";
-
-const COLS: [string, string][] = [
-  ["date_raw", "Date"], ["location", "Location"], ["invoice_no", "Invoice No."], ["payment_type", "Payment Type"],
-  ["order_type", "Order Type"], ["area", "Area"], ["item_name", "Item Name"], ["price", "Price"], ["qty", "Qty."],
-  ["without_gst", "without GST"], ["discount", "Discount"], ["tax", "Tax"], ["final_total", "Final Total"],
-  ["status", "Status"], ["table_no", "Table No."], ["server_name", "Server Name"], ["covers", "Covers"],
-  ["variation", "Variation"], ["category", "Category"], ["group_name", "Group Name"], ["hsn", "HSN"],
-  ["phone", "Phone"], ["customer_name", "Name"], ["address", "Address"], ["gst", "GST"], ["assign_to", "Assign To"],
-  ["non_taxable", "Non Taxable"], ["cgst_rate", "C GST Rate"], ["cgst_amount", "C GST Amount"],
-  ["sgst_rate", "S GST Rate"], ["sgst_amount", "S GST Amount"],
-];
 
 const PAGE_SIZE = 50;
 
@@ -64,7 +52,7 @@ export default async function SalesPage({ searchParams }: { searchParams: Promis
         </summary>
         <div className="border-t p-4">
           <p className="mb-3 text-xs text-muted-foreground">For one-off sales without a POS export. It feeds the same reports as the CSV.</p>
-          <ManualSaleForm />
+          <ManualSaleForm categories={meta.categories} />
         </div>
       </details>
 
@@ -96,29 +84,7 @@ export default async function SalesPage({ searchParams }: { searchParams: Promis
 
       <SalesFilterBar payments={meta.payments} categories={meta.categories} />
 
-      <div className="flex justify-end">
-        <ExportButton kind="sales" filters={filters} filename="romancham-sales.csv" />
-      </div>
-
-      <Card className="overflow-x-auto">
-        <table className="w-full whitespace-nowrap text-xs">
-          <thead className="border-b bg-muted/50 text-left">
-            <tr>{COLS.map(([k, l]) => <th key={k} className="px-2 py-2 font-medium">{l}</th>)}</tr>
-          </thead>
-          <tbody>
-            {rows.map((r: any) => (
-              <tr key={r.id} className="border-b last:border-0 hover:bg-muted/40">
-                {COLS.map(([k]) => <td key={k} className="px-2 py-1.5">{r[k] ?? ""}</td>)}
-              </tr>
-            ))}
-            {rows.length === 0 && (
-              <tr><td colSpan={COLS.length} className="px-2 py-8 text-center text-muted-foreground">
-                {anyFilter ? "No sales match these filters." : "No sales uploaded yet. Upload your Petpooja CSV or add a sale manually above."}
-              </td></tr>
-            )}
-          </tbody>
-        </table>
-      </Card>
+      <SalesTable rows={rows} filters={filters} anyFilter={anyFilter} filename="romancham-sales.csv" />
 
       {total > 0 && (
         <div className="flex items-center justify-between text-sm text-muted-foreground">
