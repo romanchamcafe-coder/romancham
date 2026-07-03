@@ -32,7 +32,7 @@ export async function getSalesRegister(
 
 export async function getSalesMeta(orgId: string, branchId: string | null) {
   const supabase = await createClient();
-  let q = supabase.from("pos_sales").select("payment_type, category").eq("org_id", orgId).limit(3000);
+  let q = supabase.from("pos_sales").select("payment_type, category").eq("org_id", orgId).limit(1000);
   if (branchId) q = q.eq("branch_id", branchId);
   const { data } = await q;
   const payments = [...new Set((data ?? []).map((r: any) => r.payment_type).filter(Boolean))].sort();
