@@ -7,6 +7,7 @@ import { BranchManager } from "./branch-manager";
 import { OrgSettingsForm } from "./org-settings-form";
 import { TeamManager } from "./team-manager";
 import { InviteTeammate } from "./invite-teammate";
+import { BackupRestore } from "./backup-restore";
 
 export const metadata: Metadata = { title: "Settings | Romancham" };
 
@@ -47,6 +48,13 @@ export default async function SettingsPage() {
             canManage={ctx!.role === "owner"}
           />
           <InviteTeammate />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader><CardTitle>Backup &amp; Restore</CardTitle></CardHeader>
+        <CardContent>
+          <BackupRestore canManage={ctx!.role === "owner"} />
         </CardContent>
       </Card>
     </div>
