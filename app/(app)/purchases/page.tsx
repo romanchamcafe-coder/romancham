@@ -27,7 +27,6 @@ export default async function PurchasesPage({ searchParams }: { searchParams: Pr
 
   const { rows, total } = await getPurchaseRegister(ctx!.orgId!, ctx!.branch?.id ?? null, filters, page, PAGE_SIZE);
 
-  // Empty state (no purchases at all, no filters) → onboarding
   if (total === 0 && !anyFilter) {
     const ready = await getPurchaseReadiness(ctx!.orgId!);
     return (
