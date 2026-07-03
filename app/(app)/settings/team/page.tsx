@@ -1,12 +1,14 @@
+import type { Metadata } from "next";
 import { getActiveContext } from "@/lib/auth/session";
 import { getSettings } from "@/server/queries/settings";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
 import { BranchForm } from "./branch-form";
+import { BranchManager } from "./branch-manager";
 import { OrgSettingsForm } from "./org-settings-form";
 import { TeamManager } from "./team-manager";
 import { InviteTeammate } from "./invite-teammate";
+
+export const metadata: Metadata = { title: "Settings | Romancham" };
 
 export default async function SettingsPage() {
   const ctx = await getActiveContext();
@@ -32,18 +34,7 @@ export default async function SettingsPage() {
         <CardHeader><CardTitle>Branches / Locations</CardTitle></CardHeader>
         <CardContent className="space-y-4">
           <BranchForm />
-          <Table>
-            <THead><TR><TH>Branch</TH><TH>State</TH><TH>Status</TH></TR></THead>
-            <TBody>
-              {branches.map((b: any) => (
-                <TR key={b.id}>
-                  <TD className="font-medium">{b.name}</TD>
-                  <TD>{b.state_code ?? "—"}</TD>
-                  <TD>{b.is_active ? <Badge tone="green">Active</Badge> : <Badge tone="muted">Inactive</Badge>}</TD>
-                </TR>
-              ))}
-            </TBody>
-          </Table>
+          <BranchManager branches={(branches ?? []).map((b: any) => ({ id: b.id, name: b.name, state_code: b.state_code ?? null, is_active: !!b.is_active }))} />
         </CardContent>
       </Card>
 

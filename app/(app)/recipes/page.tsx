@@ -1,3 +1,5 @@
+import type { Metadata } from "next";
+export const metadata: Metadata = { title: "Recipes | Romancham" };
 import Link from "next/link";
 import { getActiveContext } from "@/lib/auth/session";
 import { getRecipeData } from "@/server/queries/recipes";
@@ -17,6 +19,7 @@ export default async function RecipesPage() {
         <h1 className="text-xl font-semibold">Recipes</h1>
         <p className="text-sm text-muted-foreground">Recipes link each menu (Sales) item to what it's made of, so Romancham can calculate your Food Cost %.</p>
         <OnboardingChecklist
+          dismissKey="romancham_recipes_checklist_dismissed"
           title="Set up recipes in 3 steps"
           description="You need your menu items and their ingredients in place before building recipes."
           steps={[

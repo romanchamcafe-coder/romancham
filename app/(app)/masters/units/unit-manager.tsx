@@ -106,8 +106,8 @@ export function UnitManager({ rows }: { rows: Unit[] }) {
 
       <ConfirmDialog
         open={!!confirmId}
-        title="Delete unit?"
-        description={confirmRow ? `"${confirmRow.name}" (${confirmRow.abbr}) will be removed. Existing records keep their history.` : ""}
+        title={confirmRow ? `Delete ${confirmRow.name}?` : "Delete unit?"}
+        description="This cannot be undone. Items already assigned to this unit will lose their unit label."
         confirmLabel="Delete"
         destructive
         busy={pending}

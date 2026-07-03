@@ -1,3 +1,5 @@
+import type { Metadata } from "next";
+export const metadata: Metadata = { title: "Inventory | Romancham" };
 import { getActiveContext } from "@/lib/auth/session";
 import { getInventory, getAdjustItems } from "@/server/queries/inventory";
 import { Card, CardContent } from "@/components/ui/card";

@@ -92,11 +92,13 @@ export function SalesUpload({ branchId }: { branchId: string }) {
   return (
     <Card><CardContent className="space-y-3 pt-6">
       <div className="flex flex-wrap items-center gap-3">
-        <input ref={inputRef} type="file" accept=".csv,text/csv" onChange={onFile}
+        <label htmlFor="csv-file-input" className="sr-only">Upload Petpooja CSV file</label>
+        <input id="csv-file-input" ref={inputRef} type="file" accept=".csv,text/csv" onChange={onFile}
+          aria-describedby="csv-upload-hint"
           className="text-sm file:mr-3 file:rounded-md file:border-0 file:bg-primary file:px-4 file:py-2 file:text-sm file:font-medium file:text-primary-foreground hover:file:opacity-90" />
         <Button onClick={doImport} disabled={!rows?.length || pending}>{pending ? "Importing…" : "Import"}</Button>
       </div>
-      <p className="text-xs text-muted-foreground">Upload your Petpooja sales CSV. Re-uploading the same day&apos;s file replaces that day&apos;s rows (no duplicates).</p>
+      <p id="csv-upload-hint" className="text-xs text-muted-foreground">Upload your Petpooja sales CSV. Re-uploading the same day&apos;s file replaces that day&apos;s rows (no duplicates).</p>
       {fileName && <p className="text-sm font-medium">{fileName}</p>}
       {msg && <p className="text-sm text-green-600">{msg}</p>}
       {err && <p className="text-sm text-destructive">{err}</p>}

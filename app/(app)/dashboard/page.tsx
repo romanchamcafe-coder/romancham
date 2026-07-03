@@ -6,8 +6,14 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { RevenueTrend, BranchPerf } from "@/components/charts/dashboard-charts";
 import { DateRangePicker } from "@/components/dashboard/date-range-picker";
 import { resolveRange, type RangeKey } from "@/lib/date-ranges";
+import type { Metadata } from "next";
 import { inr } from "@/lib/utils";
 import { TrendingUp, LineChart, BarChart3, Package, Info } from "lucide-react";
+
+export const metadata: Metadata = { title: "Dashboard | Romancham" };
+
+const fmtDate = (iso: string) =>
+  iso ? new Date(iso + "T00:00:00").toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : "";
 
 const pct = (cur: number, prev: number) => (prev > 0 ? Math.round(((cur - prev) / prev) * 100) : cur > 0 ? 100 : 0);
 
@@ -57,7 +63,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
           <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
           <div className="mt-1 flex items-center gap-2">
             <Badge tone="muted">{r.label}</Badge>
-            <span className="text-xs text-muted-foreground">{r.from} → {r.to}</span>
+            <span className="text-xs text-muted-foreground">{fmtDate(r.from)} → {fmtDate(r.to)}</span>
           </div>
         </div>
         <DateRangePicker current={key} from={r.from} to={r.to} />

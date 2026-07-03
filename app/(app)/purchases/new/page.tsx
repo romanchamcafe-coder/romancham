@@ -1,9 +1,12 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { getActiveContext } from "@/lib/auth/session";
 import { getPurchaseFormData } from "@/server/queries/purchases";
 import { PurchaseForm } from "./purchase-form";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+
+export const metadata: Metadata = { title: "New Purchase | Romancham" };
 
 export default async function NewPurchasePage() {
   const ctx = await getActiveContext();

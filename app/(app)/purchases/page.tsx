@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { getActiveContext } from "@/lib/auth/session";
 import { getPurchaseRegister, getPurchaseReadiness, getPurchaseMeta, type PurchaseFilters } from "@/server/queries/purchases";
@@ -9,6 +10,8 @@ import { NewPurchaseButton } from "./new-purchase-button";
 import { ExportButton } from "@/components/ui/export-button";
 import type { PurchaseSortKey } from "@/server/queries/purchases";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+
+export const metadata: Metadata = { title: "Purchases | Romancham" };
 
 const PAGE_SIZE = 50;
 
@@ -34,6 +37,7 @@ export default async function PurchasesPage({ searchParams }: { searchParams: Pr
           <NewPurchaseButton disabled={ready.ingredients === 0 || ready.vendors === 0} />
         </div>
         <OnboardingChecklist
+          dismissKey="romancham_purchases_checklist_dismissed"
           title="Let's record your first purchase"
           description="Purchases feed your inventory, FIFO costing and GST. Complete these steps to get started."
           steps={[

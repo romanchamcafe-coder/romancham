@@ -1,3 +1,5 @@
+import type { Metadata } from "next";
+export const metadata: Metadata = { title: "Categories | Romancham" };
 import { createClient } from "@/lib/supabase/server";
 import { getActiveContext } from "@/lib/auth/session";
 import { CategoryManager } from "./category-manager";

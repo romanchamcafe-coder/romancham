@@ -111,8 +111,10 @@ export function CategoryManager({ rows, type = "ingredient" }: { rows: Cat[]; ty
 
       <ConfirmDialog
         open={!!confirmId}
-        title="Delete category?"
-        description={confirmRow ? `"${confirmRow.name}" will be removed from the list. Existing records that used it keep their history.` : ""}
+        title={confirmRow ? `Delete ${confirmRow.name}?` : "Delete category?"}
+        description={type === "expense"
+          ? "This cannot be undone. Expenses already assigned to this category will lose their category label."
+          : "This cannot be undone. Items already assigned to this category will lose their category label."}
         confirmLabel="Delete"
         destructive
         busy={pending}

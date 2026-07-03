@@ -1,3 +1,5 @@
+import type { Metadata } from "next";
+export const metadata: Metadata = { title: "Ingredients | Romancham" };
 import Link from "next/link";
 import { getActiveContext } from "@/lib/auth/session";
 import { getMaterialFormData, getMaterials } from "@/server/queries/masters";
