@@ -5,10 +5,11 @@ import { getSalesRegister, getSalesMeta, getSalesImports, type SalesFilters } fr
 import { SalesUpload } from "./sales-upload";
 import { SalesFilters as SalesFilterBar } from "./sales-filters";
 import { ManualSaleForm } from "./manual-sale-form";
+import { ResyncStock } from "./resync-stock";
 import { SalesTable } from "./sales-table";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { PlusCircle, Upload, ChevronLeft, ChevronRight } from "lucide-react";
+import { PlusCircle, Upload, RefreshCw, ChevronLeft, ChevronRight } from "lucide-react";
 
 const PAGE_SIZE = 50;
 
@@ -56,6 +57,13 @@ export default async function SalesPage({ searchParams }: { searchParams: Promis
           <p className="mb-3 text-xs text-muted-foreground">For one-off sales without a POS export. It feeds the same reports as the CSV.</p>
           <ManualSaleForm categories={meta.categories} />
         </div>
+      </details>
+
+      <details className="rounded-lg border bg-card">
+        <summary className="flex cursor-pointer items-center gap-2 px-4 py-3 text-sm font-medium">
+          <RefreshCw className="h-4 w-4 text-muted-foreground" aria-hidden /> Re-sync stock from sales
+        </summary>
+        <div className="border-t p-4"><ResyncStock /></div>
       </details>
 
       {imports.length > 0 && (

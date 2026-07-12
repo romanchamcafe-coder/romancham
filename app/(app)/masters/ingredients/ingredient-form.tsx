@@ -26,6 +26,13 @@ export function IngredientForm({ categories, units, vendors }: { categories: Opt
           </select>
         </div>
         <div className="space-y-1.5">
+          <Label>Fulfillment <span className="text-xs font-normal text-muted-foreground">(sales items)</span></Label>
+          <select name="fulfillment" defaultValue="direct" className={sel} aria-label="Fulfillment type">
+            <option value="direct">Made to order (deduct raw on sale)</option>
+            <option value="stock">Made to stock (produce batches)</option>
+          </select>
+        </div>
+        <div className="space-y-1.5">
           <Label>Category</Label>
           <select name="category_id" className={sel} aria-label="Category"><option value="">—</option>
             {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}

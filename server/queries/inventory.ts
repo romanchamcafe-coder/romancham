@@ -40,6 +40,35 @@ export async function getInventory(orgId: string, branchId: string | null) {
   }
 }
 
+export async function getFinishedGoods(orgId: string, branchId: string | null) {
+  try {
+    const supabase = await createClient();
+    const ingQ = supabase.from("ingredients")
+      .select("id, name, base_unit_id, reorder_level, fulfillment, material_type")
+      .eq("org_id", orgId).eq("is_active", true).order("name");
+    let stockQ = supabase.from("v_current_stock").select("ingredient_id, qty").eq("org_id", orgId);
+    if (branchId) stockQ = stockQ.eq("branch_id", branchId);
+    const unitQ = supabase.from("units").select("id, abbr").eq("org_id", orgId);
+
+    const [{ data: ings }, { data: stock }, { data: units }] = await Promise.all([ingQ, stockQ, unitQ]);
+    const qtyMap = new Map<string, number>();
+    for (const s of stock ?? []) qtyMap.set(s.ingredient_id, Number(s.qty) || 0);
+    const uni = new Map((units ?? []).map((u) => [u.id, u.abbr]));
+
+    return (ings ?? [])
+      .filter((i: any) => i.fulfillment === "stock" && (i.material_type === "sales" || i.material_type === "both"))
+      .map((i: any) => {
+        const qty = qtyMap.get(i.id) ?? 0;
+        const reorder = Number(i.reorder_level) || 0;
+        const status = qty <= 0 ? "out" : reorder > 0 && qty <= reorder ? "low" : "ok";
+        return { id: i.id, name: i.name, uom: i.base_unit_id ? uni.get(i.base_unit_id) ?? "units" : "units", qty, reorder, status };
+      });
+  } catch (e) {
+    console.error("getFinishedGoods failed", e);
+    return [];
+  }
+}
+
 export async function getAdjustItems(orgId: string) {
   try {
     const supabase = await createClient();

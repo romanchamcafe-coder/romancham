@@ -13,10 +13,12 @@ export async function createIngredient(_: ActionState | null, formData: FormData
   if (!name) return { error: "Item name required" };
   const mt = String(formData.get("material_type") || "purchase");
   const material_type = ["purchase", "sales", "both"].includes(mt) ? mt : "purchase";
+  const ff = String(formData.get("fulfillment") || "direct");
+  const fulfillment = ff === "stock" ? "stock" : "direct";
 
   const supabase = await createClient();
   const { error } = await supabase.from("ingredients").insert({
-    org_id: ctx.orgId, name, material_type,
+    org_id: ctx.orgId, name, material_type, fulfillment,
     category_id: orNull(formData.get("category_id")),
     base_unit_id: orNull(formData.get("base_unit_id")),
     default_vendor_id: orNull(formData.get("default_vendor_id")),
@@ -42,6 +44,7 @@ export async function deactivateIngredient(formData: FormData): Promise<void> {
 export type IngredientInput = {
   name: string; material_type: string; category_id: string; base_unit_id: string;
   default_vendor_id: string; default_gst_rate: string; reorder_level: string; hsn_code: string;
+  fulfillment: string;
 };
 
 export async function updateIngredient(id: string, input: IngredientInput): Promise<ActionState> {
@@ -51,10 +54,11 @@ export async function updateIngredient(id: string, input: IngredientInput): Prom
   if (!name) return { error: "Item name is required" };
   if (!input.base_unit_id) return { error: "Please select a Unit of Measure (UOM)" };
   const mt = ["purchase", "sales", "both"].includes(input.material_type) ? input.material_type : "purchase";
+  const fulfillment = input.fulfillment === "stock" ? "stock" : "direct";
 
   const supabase = await createClient();
   const { error } = await supabase.from("ingredients").update({
-    name, material_type: mt,
+    name, material_type: mt, fulfillment,
     category_id: input.category_id || null,
     base_unit_id: input.base_unit_id || null,
     default_vendor_id: input.default_vendor_id || null,

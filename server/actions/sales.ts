@@ -49,7 +49,18 @@ export async function importPosSales(
     });
   } catch { /* ignore logging failures */ }
 
+  // auto-backflush raw materials / finished stock for the imported dates
+  if (dates.length) {
+    const sorted = (dates as string[]).slice().sort();
+    try {
+      await supabase.rpc("sync_sales_consumption", {
+        p: { org_id: ctx.orgId, branch_id: branchId, from: sorted[0], to: sorted[sorted.length - 1] },
+      });
+    } catch { /* best-effort; stock can be re-synced manually */ }
+  }
+
   revalidatePath("/sales");
+  revalidatePath("/inventory");
   revalidatePath("/dashboard");
   return { ok: true, imported };
 }
@@ -88,7 +99,35 @@ export async function createManualSale(input: ManualSaleInput): Promise<ActionSt
     status: "Manual",
   });
   if (error) return { error: error.message };
+
+  // auto-backflush raw materials / finished stock for this sale date
+  try {
+    await supabase.rpc("sync_sales_consumption", {
+      p: { org_id: ctx.orgId, branch_id: branchId, from: date, to: date },
+    });
+  } catch { /* best-effort; stock can be re-synced manually */ }
+
   revalidatePath("/sales");
+  revalidatePath("/inventory");
   revalidatePath("/dashboard");
   return { ok: true };
+}
+
+export async function resyncSalesConsumption(from: string, to: string): Promise<ActionState & { matched?: number; unmatched?: string[] }> {
+  const ctx = await getActiveContext();
+  if (!ctx?.orgId) return { error: "No active organization" };
+  const branchId = ctx.branch?.id;
+  if (!branchId) return { error: "No location/branch selected" };
+  const f = (from || "").trim(), t = (to || "").trim();
+  if (!f || !t) return { error: "Pick a start and end date" };
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("sync_sales_consumption", {
+    p: { org_id: ctx.orgId, branch_id: branchId, from: f, to: t },
+  });
+  if (error) return { error: error.message };
+  revalidatePath("/inventory");
+  revalidatePath("/dashboard");
+  const res = (data ?? {}) as { matched?: number; unmatched?: string[] };
+  return { ok: true, matched: res.matched ?? 0, unmatched: res.unmatched ?? [] };
 }

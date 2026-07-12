@@ -17,7 +17,7 @@ type Opt = { id: string; name: string; abbr?: string };
 type Item = {
   id: string; name: string; material_type: string; category_id: string | null;
   base_unit_id: string | null; default_vendor_id: string | null; default_gst_rate: number | null;
-  reorder_level: number | null; hsn_code: string | null;
+  reorder_level: number | null; hsn_code: string | null; fulfillment: string | null;
   category_name: string; uom: string; vendor_name: string;
 };
 const typeLabel: Record<string, string> = { purchase: "Purchase", sales: "Sales", both: "Both" };
@@ -29,6 +29,7 @@ const toForm = (i: Item): IngredientInput => ({
   default_vendor_id: i.default_vendor_id ?? "",
   default_gst_rate: String(i.default_gst_rate ?? 0), reorder_level: String(i.reorder_level ?? 0),
   hsn_code: i.hsn_code ?? "",
+  fulfillment: i.fulfillment ?? "direct",
 });
 
 export function IngredientsTable({ items, categories, units, vendors }: {
@@ -109,6 +110,13 @@ export function IngredientsTable({ items, categories, units, vendors }: {
                 <option value="purchase">Purchase (raw item you buy)</option>
                 <option value="sales">Sales (product you sell)</option>
                 <option value="both">Both</option>
+              </select>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="ei-fulfil">Fulfillment <span className="text-xs font-normal text-muted-foreground">(sales items)</span></Label>
+              <select id="ei-fulfil" className={sel} value={v.fulfillment} onChange={set("fulfillment")}>
+                <option value="direct">Made to order (deduct raw on sale)</option>
+                <option value="stock">Made to stock (produce batches)</option>
               </select>
             </div>
             <div className="space-y-1.5">

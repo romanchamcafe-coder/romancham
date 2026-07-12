@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 export const metadata: Metadata = { title: "Inventory | Romancham" };
 import { getActiveContext } from "@/lib/auth/session";
-import { getInventory, getAdjustItems } from "@/server/queries/inventory";
+import { getInventory, getFinishedGoods, getAdjustItems } from "@/server/queries/inventory";
+import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -11,6 +12,7 @@ import { inr } from "@/lib/utils";
 export default async function InventoryPage() {
   const ctx = await getActiveContext();
   const rows = await getInventory(ctx!.orgId!, ctx!.branch?.id ?? null);
+  const finished = await getFinishedGoods(ctx!.orgId!, ctx!.branch?.id ?? null);
   const items = await getAdjustItems(ctx!.orgId!);
 
   const lowCount = rows.filter((r) => r.status === "low" || r.status === "out").length;
@@ -53,6 +55,28 @@ export default async function InventoryPage() {
           </TBody>
         </Table>
       </Card>
+
+      {finished.length > 0 && (
+        <div className="space-y-2">
+          <h2 className="text-sm font-semibold">Finished goods <span className="font-normal text-muted-foreground">· made-to-stock items (e.g. ice cream). Added via <Link href="/production" className="text-primary underline">Production</Link>, deducted on sale.</span></h2>
+          <Card className="overflow-x-auto">
+            <Table>
+              <THead><TR><TH>Finished good</TH><TH>UOM</TH><TH className="text-right">In Hand</TH><TH className="text-right">Reorder</TH><TH>Status</TH></TR></THead>
+              <TBody>
+                {finished.map((f) => (
+                  <TR key={f.id}>
+                    <TD className="font-medium">{f.name}</TD>
+                    <TD>{f.uom}</TD>
+                    <TD className="text-right tabular-nums">{f.qty} {f.uom}</TD>
+                    <TD className="text-right tabular-nums">{f.reorder || "—"}</TD>
+                    <TD>{badge(f.status)}</TD>
+                  </TR>
+                ))}
+              </TBody>
+            </Table>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }
