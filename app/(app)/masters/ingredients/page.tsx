@@ -1,16 +1,12 @@
 import type { Metadata } from "next";
-export const metadata: Metadata = { title: "Ingredients | Romancham" };
 import Link from "next/link";
 import { getActiveContext } from "@/lib/auth/session";
 import { getMaterialFormData, getMaterials } from "@/server/queries/masters";
-import { deactivateIngredient } from "@/server/actions/ingredients";
-import { Card } from "@/components/ui/card";
-import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
 import { IngredientForm } from "./ingredient-form";
+import { IngredientsTable } from "./ingredients-table";
 import { cn } from "@/lib/utils";
 
-const typeLabel: Record<string, string> = { purchase: "Purchase", sales: "Sales", both: "Both" };
+export const metadata: Metadata = { title: "Ingredients | Romancham" };
 
 export default async function MaterialsPage({ searchParams }: { searchParams: Promise<{ type?: string }> }) {
   const ctx = await getActiveContext();
@@ -35,26 +31,7 @@ export default async function MaterialsPage({ searchParams }: { searchParams: Pr
         ))}
       </div>
 
-      <Card className="overflow-x-auto">
-        <Table>
-          <THead><TR><TH>Ingredient</TH><TH>Type</TH><TH>Category</TH><TH>UOM</TH><TH>GST %</TH><TH>Reorder</TH><TH>Default Vendor</TH><TH></TH></TR></THead>
-          <TBody>
-            {items.map((i: any) => (
-              <TR key={i.id}>
-                <TD className="font-medium">{i.name}</TD>
-                <TD><Badge tone={i.material_type === "sales" ? "green" : i.material_type === "both" ? "amber" : "muted"}>{typeLabel[i.material_type] ?? i.material_type}</Badge></TD>
-                <TD>{i.category_name}</TD>
-                <TD>{i.uom}</TD>
-                <TD>{i.default_gst_rate}%</TD>
-                <TD>{i.reorder_level}</TD>
-                <TD>{i.vendor_name}</TD>
-                <TD className="text-right"><form action={deactivateIngredient}><input type="hidden" name="id" value={i.id} /><button className="text-xs text-muted-foreground hover:text-destructive">Remove</button></form></TD>
-              </TR>
-            ))}
-            {items.length === 0 && <TR><TD colSpan={8} className="py-8 text-center text-muted-foreground">No items yet.</TD></TR>}
-          </TBody>
-        </Table>
-      </Card>
+      <IngredientsTable items={items as any} categories={categories} units={units} vendors={vendors} />
     </div>
   );
 }

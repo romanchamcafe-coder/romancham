@@ -13,7 +13,7 @@ export async function getMaterialFormData(orgId: string) {
 export async function getMaterials(orgId: string, type?: string) {
   const supabase = await createClient();
   let mq = supabase.from("ingredients")
-    .select("id, name, material_type, category_id, base_unit_id, default_vendor_id, default_gst_rate, reorder_level")
+    .select("id, name, material_type, category_id, base_unit_id, default_vendor_id, default_gst_rate, reorder_level, hsn_code")
     .eq("org_id", orgId).order("name");
   if (type === "purchase") mq = mq.in("material_type", ["purchase", "both"]);
   else if (type === "sales") mq = mq.in("material_type", ["sales", "both"]);
