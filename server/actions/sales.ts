@@ -131,3 +131,64 @@ export async function resyncSalesConsumption(from: string, to: string): Promise<
   const res = (data ?? {}) as { matched?: number; unmatched?: string[] };
   return { ok: true, matched: res.matched ?? 0, unmatched: res.unmatched ?? [] };
 }
+
+async function resyncDates(supabase: any, orgId: string, branchId: string, dates: (string | null | undefined)[]) {
+  const uniq = [...new Set(dates.filter(Boolean))] as string[];
+  for (const d of uniq) {
+    try { await supabase.rpc("sync_sales_consumption", { p: { org_id: orgId, branch_id: branchId, from: d, to: d } }); } catch { /* best-effort */ }
+  }
+}
+
+export async function updateSale(id: string, input: ManualSaleInput): Promise<ActionState> {
+  const ctx = await getActiveContext();
+  if (!ctx?.orgId) return { error: "No active organization" };
+  const branchId = ctx.branch?.id;
+  if (!branchId) return { error: "No location/branch selected" };
+  if (!id) return { error: "Missing row id" };
+
+  const item = (input.item_name || "").trim();
+  if (!item) return { error: "Item name is required" };
+  const date = (input.sale_date || "").trim() || new Date().toISOString().slice(0, 10);
+  const total = num(input.final_total);
+  if (total === null) return { error: "Enter a valid final total" };
+
+  const supabase = await createClient();
+  const { data: existing } = await supabase.from("pos_sales").select("sale_date").eq("id", id).eq("org_id", ctx.orgId).maybeSingle();
+
+  const { error } = await supabase.from("pos_sales").update({
+    sale_date: date, date_raw: date,
+    item_name: item,
+    category: (input.category || "").trim() || null,
+    payment_type: (input.payment_type || "").trim() || null,
+    invoice_no: (input.invoice_no || "").trim() || null,
+    location: (input.location || "").trim() || null,
+    qty: num(input.qty), price: num(input.price),
+    without_gst: num(input.without_gst), tax: num(input.tax), final_total: total,
+  }).eq("id", id).eq("org_id", ctx.orgId).eq("branch_id", branchId);
+  if (error) return { error: error.message };
+
+  await resyncDates(supabase, ctx.orgId, branchId, [date, existing?.sale_date]);
+  revalidatePath("/sales");
+  revalidatePath("/inventory");
+  revalidatePath("/dashboard");
+  return { ok: true };
+}
+
+export async function deleteSale(id: string): Promise<ActionState> {
+  const ctx = await getActiveContext();
+  if (!ctx?.orgId) return { error: "No active organization" };
+  const branchId = ctx.branch?.id;
+  if (!branchId) return { error: "No location/branch selected" };
+  if (!id) return { error: "Missing row id" };
+
+  const supabase = await createClient();
+  const { data: existing } = await supabase.from("pos_sales").select("sale_date").eq("id", id).eq("org_id", ctx.orgId).maybeSingle();
+  const { error } = await supabase.from("pos_sales").delete().eq("id", id).eq("org_id", ctx.orgId).eq("branch_id", branchId);
+  if (error) return { error: error.message };
+
+  await resyncDates(supabase, ctx.orgId, branchId, [existing?.sale_date]);
+  revalidatePath("/sales");
+  revalidatePath("/inventory");
+  revalidatePath("/dashboard");
+  return { ok: true };
+}
