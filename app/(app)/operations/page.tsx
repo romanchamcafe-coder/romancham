@@ -6,7 +6,7 @@ import { getOpsOverview } from "@/server/queries/operations";
 import { getInventoryCounts } from "@/server/queries/requests";
 import { Card, CardContent } from "@/components/ui/card";
 import { inr } from "@/lib/utils";
-import { ClipboardCheck, Trash2, CheckCircle2, Circle, PackageCheck, ShoppingBag } from "lucide-react";
+import { ClipboardCheck, Trash2, CheckCircle2, Circle, PackageCheck, ShoppingBag, TrendingUp, Wallet } from "lucide-react";
 
 export default async function OperationsPage() {
   const ctx = await getActiveContext();
@@ -97,6 +97,29 @@ export default async function OperationsPage() {
           </div>
           <span className="text-sm font-medium text-primary">Open →</span>
         </Link>
+      </div>
+
+      {/* Finance */}
+      <div>
+        <div className="mb-2 flex items-center gap-2 text-sm font-semibold"><TrendingUp className="h-4 w-4 text-primary" /> Finance</div>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Link href="/operations/finance"
+            className="flex items-center justify-between rounded-xl border bg-card p-4 transition active:scale-[.99] hover:border-primary/50">
+            <div>
+              <p className="font-medium">P&amp;L this month</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">Revenue, food cost %, profit</p>
+            </div>
+            <TrendingUp className="h-5 w-5 shrink-0 text-primary" />
+          </Link>
+          <Link href="/operations/cash"
+            className="flex items-center justify-between rounded-xl border bg-card p-4 transition active:scale-[.99] hover:border-primary/50">
+            <div>
+              <p className="font-medium">Cash reconciliation</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">Count the drawer against POS</p>
+            </div>
+            <Wallet className="h-5 w-5 shrink-0 text-primary" />
+          </Link>
+        </div>
       </div>
     </div>
   );
