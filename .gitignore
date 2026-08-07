@@ -7,3 +7,5 @@ node_modules
 .vercel
 supabase/.branches
 supabase/.temp
+*.bat
+deploy_result.txt

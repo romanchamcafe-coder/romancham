@@ -57,12 +57,15 @@ export default async function FinancePage() {
         <CardContent className="pt-5">
           <p className="mb-2 text-sm font-semibold">Profit &amp; loss</p>
           <div className="divide-y text-sm">
-            {rows.map(([label, val, strong], i) => (
+            {rows.map(([label, val0, strong], i) => {
+              const val = val0 || 0; // normalize -0 → 0
+              return (
               <div key={i} className={`flex justify-between py-2 ${strong ? "font-semibold" : label.startsWith("—") ? "pl-3 text-muted-foreground" : ""}`}>
                 <span>{label}</span>
                 <span className={`tabular-nums ${val < 0 ? "text-muted-foreground" : ""} ${strong && val < 0 ? "text-red-600" : ""}`}>{val < 0 ? `(${inr(-val)})` : inr(val)}</span>
               </div>
-            ))}
+              );
+            })}
           </div>
           <p className="mt-3 text-xs text-muted-foreground">
             Food cost uses this month&apos;s <b>purchases</b> as the cost of goods (recipe-based COGS comes with the Kitchen phase). Labour is pulled from expenses in salary/wage categories.
