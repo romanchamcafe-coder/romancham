@@ -3,13 +3,17 @@ export const metadata: Metadata = { title: "Operations | Romancham" };
 import Link from "next/link";
 import { getActiveContext } from "@/lib/auth/session";
 import { getOpsOverview } from "@/server/queries/operations";
+import { getInventoryCounts } from "@/server/queries/requests";
 import { Card, CardContent } from "@/components/ui/card";
 import { inr } from "@/lib/utils";
-import { ClipboardCheck, Trash2, CheckCircle2, Circle } from "lucide-react";
+import { ClipboardCheck, Trash2, CheckCircle2, Circle, PackageCheck, ShoppingBag } from "lucide-react";
 
 export default async function OperationsPage() {
   const ctx = await getActiveContext();
-  const o = await getOpsOverview(ctx!.orgId!, ctx!.branch?.id ?? null);
+  const [o, inv] = await Promise.all([
+    getOpsOverview(ctx!.orgId!, ctx!.branch?.id ?? null),
+    getInventoryCounts(ctx!.orgId!, ctx!.branch?.id ?? null),
+  ]);
 
   return (
     <div className="space-y-5">
@@ -48,6 +52,38 @@ export default async function OperationsPage() {
             </Link>
           ))}
         </div>
+      </div>
+
+      {/* Inventory & requests */}
+      <div>
+        <div className="mb-2 flex items-center gap-2 text-sm font-semibold"><PackageCheck className="h-4 w-4 text-primary" /> Inventory &amp; requests</div>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Link href="/operations/indents"
+            className="flex items-center justify-between rounded-xl border bg-card p-4 transition active:scale-[.99] hover:border-primary/50">
+            <div>
+              <p className="font-medium">Indents</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">Internal stock requests</p>
+            </div>
+            {inv.pendingIndents > 0
+              ? <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800">{inv.pendingIndents} pending</span>
+              : <span className="text-sm font-medium text-primary">Open →</span>}
+          </Link>
+          <Link href="/operations/purchase-requests"
+            className="flex items-center justify-between rounded-xl border bg-card p-4 transition active:scale-[.99] hover:border-primary/50">
+            <div>
+              <p className="font-medium">Purchase requests</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">Buy stock from a vendor</p>
+            </div>
+            {inv.pendingPRs > 0
+              ? <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800">{inv.pendingPRs} pending</span>
+              : <span className="text-sm font-medium text-primary">Open →</span>}
+          </Link>
+        </div>
+        {inv.low > 0 && (
+          <Link href="/operations/indents" className="mt-3 flex items-center gap-2 rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800 active:scale-[.99]">
+            <ShoppingBag className="h-4 w-4" /> <b>{inv.low}</b> item{inv.low > 1 ? "s" : ""} at or below reorder level — tap to raise an indent.
+          </Link>
+        )}
       </div>
 
       {/* Wastage */}
