@@ -15,6 +15,7 @@
   --input: 214 32% 91%;
   --destructive: 0 84% 60%;
   --destructive-foreground: 0 0% 100%;
+  --ring: 24 90% 48%;
 }
 .dark {
   --background: 222 47% 11%;
@@ -27,6 +28,7 @@
   --muted-foreground: 215 20% 65%;
   --border: 217 33% 20%;
   --input: 217 33% 20%;
+  --ring: 24 90% 52%;
 }
 * { border-color: hsl(var(--border)); }
 body { background: hsl(var(--background)); color: hsl(var(--foreground)); }

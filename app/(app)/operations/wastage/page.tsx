@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-export const metadata: Metadata = { title: "Wastage | Romancham" };
+import { pageMetadata } from "@/lib/seo";
+export const metadata: Metadata = pageMetadata({ title: "Wastage", description: "Log spoilage and wastage by item and reason, with cost impact.", path: "/operations/wastage" });
 import Link from "next/link";
 import { getActiveContext } from "@/lib/auth/session";
 import { getWastage, getWastageItems } from "@/server/queries/operations";

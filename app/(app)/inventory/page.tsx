@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-export const metadata: Metadata = { title: "Inventory | Romancham" };
+import { pageMetadata } from "@/lib/seo";
+export const metadata: Metadata = pageMetadata({ title: "Inventory", description: "Live stock levels, finished goods and quick stock adjustments across your branches.", path: "/inventory" });
 import { getActiveContext } from "@/lib/auth/session";
 import { getInventory, getFinishedGoods, getAdjustItems } from "@/server/queries/inventory";
 import Link from "next/link";

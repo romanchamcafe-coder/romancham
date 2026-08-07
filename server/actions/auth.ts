@@ -142,9 +142,10 @@ export async function createOrg(_: ActionState | null, formData: FormData): Prom
   const slug =
     orgName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") +
     "-" + Math.random().toString(36).slice(2, 6);
-  const { error } = await withRetry(() =>
-    supabase.rpc("bootstrap_org", { p_name: orgName, p_slug: slug, p_branch: "Main Branch" }).then((r) => ({ error: r.error })),
-  );
+  const { error } = await withRetry(async () => {
+    const r = await supabase.rpc("bootstrap_org", { p_name: orgName, p_slug: slug, p_branch: "Main Branch" });
+    return { error: r.error };
+  });
   if (error) return { error: friendly(error.message) };
   redirect("/dashboard");
 }

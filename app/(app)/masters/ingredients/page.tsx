@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { pageMetadata } from "@/lib/seo";
 import Link from "next/link";
 import { getActiveContext } from "@/lib/auth/session";
 import { getMaterialFormData, getMaterials } from "@/server/queries/masters";
@@ -6,7 +7,7 @@ import { IngredientForm } from "./ingredient-form";
 import { IngredientsTable } from "./ingredients-table";
 import { cn } from "@/lib/utils";
 
-export const metadata: Metadata = { title: "Ingredients | Romancham" };
+export const metadata: Metadata = pageMetadata({ title: "Ingredients", description: "Maintain your ingredient master with units, costs, reorder levels and fulfilment type.", path: "/masters/ingredients" });
 
 export default async function MaterialsPage({ searchParams }: { searchParams: Promise<{ type?: string }> }) {
   const ctx = await getActiveContext();

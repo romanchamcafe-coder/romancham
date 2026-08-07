@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-export const metadata: Metadata = { title: "Recipes | Romancham" };
+import { pageMetadata } from "@/lib/seo";
+export const metadata: Metadata = pageMetadata({ title: "Recipes", description: "Build recipes and see live food cost per item from ingredient prices.", path: "/recipes" });
 import Link from "next/link";
 import { getActiveContext } from "@/lib/auth/session";
 import { getRecipeData } from "@/server/queries/recipes";
@@ -17,7 +18,7 @@ export default async function RecipesPage() {
     return (
       <div className="space-y-4">
         <h1 className="text-xl font-semibold">Recipes</h1>
-        <p className="text-sm text-muted-foreground">Recipes link each menu (Sales) item to what it's made of, so Romancham can calculate your Food Cost %.</p>
+        <p className="text-sm text-muted-foreground">Recipes link each menu (Sales) item to what it&apos;s made of, so Romancham can calculate your Food Cost %.</p>
         <OnboardingChecklist
           dismissKey="romancham_recipes_checklist_dismissed"
           title="Set up recipes in 3 steps"

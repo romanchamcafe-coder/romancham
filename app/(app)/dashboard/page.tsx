@@ -3,14 +3,15 @@ import { getDashboard, getActivityCounts } from "@/server/queries/dashboard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
-import { RevenueTrend, BranchPerf } from "@/components/charts/dashboard-charts";
+import { RevenueTrend, BranchPerf } from "@/components/charts/lazy-charts";
 import { DateRangePicker } from "@/components/dashboard/date-range-picker";
 import { resolveRange, type RangeKey } from "@/lib/date-ranges";
 import type { Metadata } from "next";
+import { pageMetadata } from "@/lib/seo";
 import { inr } from "@/lib/utils";
 import { TrendingUp, LineChart, BarChart3, Package, Info } from "lucide-react";
 
-export const metadata: Metadata = { title: "Dashboard | Romancham" };
+export const metadata: Metadata = pageMetadata({ title: "Dashboard", description: "Your café at a glance — sales, food cost, top items and today's operational status.", path: "/dashboard" });
 
 const fmtDate = (iso: string) =>
   iso ? new Date(iso + "T00:00:00").toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : "";

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { pageMetadata } from "@/lib/seo";
 import Link from "next/link";
 import { getActiveContext } from "@/lib/auth/session";
 import { getPurchaseRegister, getPurchaseReadiness, getPurchaseMeta, type PurchaseFilters } from "@/server/queries/purchases";
@@ -11,7 +12,7 @@ import { ExportButton } from "@/components/ui/export-button";
 import type { PurchaseSortKey } from "@/server/queries/purchases";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
-export const metadata: Metadata = { title: "Purchases | Romancham" };
+export const metadata: Metadata = pageMetadata({ title: "Purchases", description: "Purchase register with vendor, date and value filters.", path: "/purchases" });
 
 const PAGE_SIZE = 50;
 

@@ -1,5 +1,7 @@
-import { createServerClient } from "@supabase/ssr";
+import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+
+type CookieToSet = { name: string; value: string; options?: CookieOptions };
 
 // Cap the auth check so a slow/unreachable Supabase can't hang the
 // middleware until Vercel kills it (MIDDLEWARE_INVOCATION_TIMEOUT / 504).
@@ -17,7 +19,7 @@ export async function updateSession(request: NextRequest) {
         getAll() {
           return request.cookies.getAll();
         },
-        setAll(toSet) {
+        setAll(toSet: CookieToSet[]) {
           toSet.forEach(({ name, value }) => request.cookies.set(name, value));
           response = NextResponse.next({ request });
           toSet.forEach(({ name, value, options }) => response.cookies.set(name, value, options));

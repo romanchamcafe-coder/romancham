@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-export const metadata: Metadata = { title: "Purchase Requests | Romancham" };
+import { pageMetadata } from "@/lib/seo";
+export const metadata: Metadata = pageMetadata({ title: "Purchase Requests", description: "Create and approve vendor purchase requests from low-stock items.", path: "/operations/purchase-requests" });
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 import { getActiveContext } from "@/lib/auth/session";

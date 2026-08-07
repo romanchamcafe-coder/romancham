@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-export const metadata: Metadata = { title: "Expenses | Romancham" };
+import { pageMetadata } from "@/lib/seo";
+export const metadata: Metadata = pageMetadata({ title: "Expenses", description: "Record and review operating expenses like rent, utilities, salaries and supplies.", path: "/expenses" });
 import { getActiveContext } from "@/lib/auth/session";
 import { getExpenses, getExpenseCategories } from "@/server/queries/expenses";
 import { Card } from "@/components/ui/card";

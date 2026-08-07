@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-export const metadata: Metadata = { title: "Production | Romancham" };
+import { pageMetadata } from "@/lib/seo";
+export const metadata: Metadata = pageMetadata({ title: "Production", description: "Record production batches that consume raw materials and add finished goods.", path: "/production" });
 import Link from "next/link";
 import { getActiveContext } from "@/lib/auth/session";
 import { getProductionData } from "@/server/queries/production";

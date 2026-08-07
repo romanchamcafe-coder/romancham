@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-export const metadata: Metadata = { title: "Cash Reconciliation | Romancham" };
+import { pageMetadata } from "@/lib/seo";
+export const metadata: Metadata = pageMetadata({ title: "Cash Reconciliation", description: "Count the drawer against POS cash sales and record daily cash variance.", path: "/operations/cash" });
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 import { getActiveContext } from "@/lib/auth/session";

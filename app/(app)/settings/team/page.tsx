@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { pageMetadata } from "@/lib/seo";
 import { getActiveContext } from "@/lib/auth/session";
 import { getSettings } from "@/server/queries/settings";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,7 +10,7 @@ import { TeamManager } from "./team-manager";
 import { InviteTeammate } from "./invite-teammate";
 import { BackupRestore } from "./backup-restore";
 
-export const metadata: Metadata = { title: "Settings | Romancham" };
+export const metadata: Metadata = pageMetadata({ title: "Settings", description: "Manage your organization, branches and team members.", path: "/settings/team" });
 
 export default async function SettingsPage() {
   const ctx = await getActiveContext();

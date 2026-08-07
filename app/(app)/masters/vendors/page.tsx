@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-export const metadata: Metadata = { title: "Vendors | Romancham" };
+import { pageMetadata } from "@/lib/seo";
+export const metadata: Metadata = pageMetadata({ title: "Vendors", description: "Manage suppliers, default items and vendor tiers for purchasing.", path: "/masters/vendors" });
 import { createClient } from "@/lib/supabase/server";
 import { getActiveContext } from "@/lib/auth/session";
 import { VendorManager } from "./vendor-manager";

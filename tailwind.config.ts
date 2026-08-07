@@ -14,6 +14,7 @@ export default {
         muted: { DEFAULT: "hsl(var(--muted))", foreground: "hsl(var(--muted-foreground))" },
         card: { DEFAULT: "hsl(var(--card))", foreground: "hsl(var(--card-foreground))" },
         destructive: { DEFAULT: "hsl(var(--destructive))", foreground: "hsl(var(--destructive-foreground))" },
+        ring: "hsl(var(--ring))",
       },
       borderRadius: { lg: "0.5rem", md: "0.375rem", sm: "0.25rem" },
     },

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-export const metadata: Metadata = { title: "Indents | Romancham" };
+import { pageMetadata } from "@/lib/seo";
+export const metadata: Metadata = pageMetadata({ title: "Indents", description: "Raise and approve internal stock requests between store and kitchen.", path: "/operations/indents" });
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 import { getActiveContext } from "@/lib/auth/session";

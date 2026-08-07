@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-export const metadata: Metadata = { title: "Operations | Romancham" };
+import { pageMetadata } from "@/lib/seo";
+export const metadata: Metadata = pageMetadata({ title: "Operations", description: "Daily checklists, inventory requests, wastage and finance — your operations hub.", path: "/operations" });
 import Link from "next/link";
 import { getActiveContext } from "@/lib/auth/session";
 import { getOpsOverview } from "@/server/queries/operations";

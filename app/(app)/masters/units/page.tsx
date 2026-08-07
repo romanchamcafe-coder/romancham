@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-export const metadata: Metadata = { title: "Units (UOM) | Romancham" };
+import { pageMetadata } from "@/lib/seo";
+export const metadata: Metadata = pageMetadata({ title: "Units (UOM)", description: "Manage units of measure used across ingredients, recipes and purchases.", path: "/masters/units" });
 import { createClient } from "@/lib/supabase/server";
 import { getActiveContext } from "@/lib/auth/session";
 import { UnitManager } from "./unit-manager";

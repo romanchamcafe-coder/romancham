@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-export const metadata: Metadata = { title: "Sales | Romancham" };
+import { pageMetadata } from "@/lib/seo";
+export const metadata: Metadata = pageMetadata({ title: "Sales", description: "Sales register with POS import, manual entry, edit and delete.", path: "/sales" });
 import { getActiveContext } from "@/lib/auth/session";
 import { getSalesRegister, getSalesMeta, getSalesImports, type SalesFilters } from "@/server/queries/sales";
 import { SalesUpload } from "./sales-upload";

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-export const metadata: Metadata = { title: "Categories | Romancham" };
+import { pageMetadata } from "@/lib/seo";
+export const metadata: Metadata = pageMetadata({ title: "Categories", description: "Manage ingredient and expense categories for cleaner reporting.", path: "/masters/categories" });
 import { createClient } from "@/lib/supabase/server";
 import { getActiveContext } from "@/lib/auth/session";
 import { CategoryManager } from "./category-manager";
