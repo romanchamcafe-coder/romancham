@@ -1,25 +1,21 @@
 import type { Metadata } from "next";
 import { pageMetadata } from "@/lib/seo";
 import { getActiveContext } from "@/lib/auth/session";
-import { getSettings } from "@/server/queries/settings";
+import { getSettings, getTeam } from "@/server/queries/settings";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BranchForm } from "./branch-form";
 import { BranchManager } from "./branch-manager";
 import { OrgSettingsForm } from "./org-settings-form";
-import { TeamManager } from "./team-manager";
-import { InviteTeammate } from "./invite-teammate";
+import { TeamPanel } from "./team-panel";
 import { BackupRestore } from "./backup-restore";
 
 export const metadata: Metadata = pageMetadata({ title: "Settings", description: "Manage your organization, branches and team members.", path: "/settings/team" });
 
 export default async function SettingsPage() {
   const ctx = await getActiveContext();
-  const { org, branches, members } = await getSettings(ctx!.orgId!);
-
-  const queried = (members ?? []).map((m: any) => ({ user_id: m.user_id, role: m.role, name: m.profiles?.full_name ?? "" }));
-  const teamMembers = queried.some((m) => m.user_id === ctx!.user.id)
-    ? queried
-    : [{ user_id: ctx!.user.id, role: ctx!.role ?? "owner", name: ctx!.user.email ?? "" }, ...queried];
+  const { org, branches } = await getSettings(ctx!.orgId!);
+  const team = await getTeam(ctx!.orgId!);
+  const canManage = ctx!.role === "owner" || ctx!.role === "admin";
 
   return (
     <div className="space-y-6">
@@ -43,12 +39,13 @@ export default async function SettingsPage() {
       <Card>
         <CardHeader><CardTitle>Team</CardTitle></CardHeader>
         <CardContent>
-          <TeamManager
-            members={teamMembers}
+          <TeamPanel
+            members={team.members}
+            invitations={team.invitations}
+            branches={team.branches}
             currentUserId={ctx!.user.id}
-            canManage={ctx!.role === "owner"}
+            canManage={canManage}
           />
-          <InviteTeammate />
         </CardContent>
       </Card>
 

@@ -65,7 +65,11 @@ export async function signIn(_: ActionState | null, formData: FormData): Promise
   const supabase = await createClient();
   const { error } = await withRetry(() => supabase.auth.signInWithPassword({ email, password }));
   if (error) return { error: friendly(error.message) };
-  redirect("/dashboard");
+  // Best-effort: record last login (ignored if the user has no membership yet).
+  try { await supabase.rpc("touch_last_login"); } catch {}
+  const next = String(formData.get("next") || "");
+  const dest = next.startsWith("/") && !next.startsWith("//") ? next : "/dashboard";
+  redirect(dest);
 }
 
 export async function signUp(_: ActionState | null, formData: FormData): Promise<ActionState> {

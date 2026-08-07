@@ -1,7 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { cookies } from "next/headers";
+import type { AnyRole } from "@/lib/auth/permissions";
 
-type Role = "owner" | "manager" | "staff" | "accountant";
+type Role = AnyRole;
 
 export type ActiveContext = {
   user: { id: string; email?: string };

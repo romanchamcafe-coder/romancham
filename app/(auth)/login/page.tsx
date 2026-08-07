@@ -1,11 +1,18 @@
 "use client";
-import { useActionState } from "react";
+import { Suspense, useActionState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { signIn } from "@/server/actions/auth";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+
+function NextField() {
+  const sp = useSearchParams();
+  const next = sp.get("next") ?? "";
+  return <input type="hidden" name="next" value={next} />;
+}
 
 export default function LoginPage() {
   const [state, action, pending] = useActionState(signIn, null);
@@ -13,6 +20,7 @@ export default function LoginPage() {
     <Card>
       <CardContent className="pt-6">
         <form action={action} className="space-y-4">
+          <Suspense fallback={null}><NextField /></Suspense>
           <div className="space-y-1.5">
             <Label htmlFor="email">Email</Label>
             <Input id="email" name="email" type="email" required placeholder="you@cafe.com" />
