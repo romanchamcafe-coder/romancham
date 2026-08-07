@@ -18,7 +18,10 @@ export default function LoginPage() {
             <Input id="email" name="email" type="email" required placeholder="you@cafe.com" />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="password">Password</Label>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="password">Password</Label>
+              <Link href="/forgot-password" className="text-xs text-primary underline">Forgot password?</Link>
+            </div>
             <Input id="password" name="password" type="password" required />
           </div>
           {state?.error && <p className="text-sm text-destructive">{state.error}</p>}
