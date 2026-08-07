@@ -7,7 +7,7 @@ import { Toaster } from "@/components/ui/toaster";
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const ctx = await getActiveContext();
   if (!ctx) redirect("/login");
-  if (!ctx.org) redirect("/login"); // no org yet — could route to an onboarding page
+  if (!ctx.org) redirect("/welcome"); // signed in but no business yet → finish onboarding
 
   return (
     <div className="flex min-h-screen">

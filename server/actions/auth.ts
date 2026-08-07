@@ -124,6 +124,31 @@ export async function updatePassword(_: ActionState | null, formData: FormData):
   redirect("/dashboard");
 }
 
+// Create the organization for a signed-in user who doesn't have one yet
+// (e.g. they confirmed their email, which doesn't create the org). This is
+// what the /welcome onboarding page submits to, and it prevents the
+// "logged in but no org" redirect loop.
+export async function createOrg(_: ActionState | null, formData: FormData): Promise<ActionState> {
+  const orgName = String(formData.get("org_name") || "").trim();
+  if (!orgName) return { error: "Enter your business name" };
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Your session expired — please sign in again." };
+
+  // already has an org? just go in.
+  const { data: existing } = await supabase.from("memberships").select("id").eq("user_id", user.id).eq("is_active", true).limit(1);
+  if (existing && existing.length > 0) redirect("/dashboard");
+
+  const slug =
+    orgName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") +
+    "-" + Math.random().toString(36).slice(2, 6);
+  const { error } = await withRetry(() =>
+    supabase.rpc("bootstrap_org", { p_name: orgName, p_slug: slug, p_branch: "Main Branch" }).then((r) => ({ error: r.error })),
+  );
+  if (error) return { error: friendly(error.message) };
+  redirect("/dashboard");
+}
+
 export async function signOut(): Promise<void> {
   const supabase = await createClient();
   await supabase.auth.signOut();
