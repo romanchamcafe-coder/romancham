@@ -33,14 +33,15 @@ export async function deriveAndSync(
     let wasteQ = supabase.from("ops_wastage").select("cost").eq("org_id", orgId).gte("occurred_on", weekAgo);
     let cashQ = supabase.from("ops_cash_recon").select("variance").eq("org_id", orgId).eq("recon_date", today);
     let payQ = supabase.from("purchases").select("id").eq("org_id", orgId).in("payment_status", ["unpaid", "partial"]).gte("bill_date", monthStart);
+    let taskQ = supabase.from("ops_tasks").select("id").eq("org_id", orgId).is("completed_at", null).lt("due_at", new Date().toISOString());
     if (branchId) {
       prQ = prQ.eq("branch_id", branchId); inQ = inQ.eq("branch_id", branchId);
       clQ = clQ.eq("branch_id", branchId); wasteQ = wasteQ.eq("branch_id", branchId);
-      cashQ = cashQ.eq("branch_id", branchId); payQ = payQ.eq("branch_id", branchId);
+      cashQ = cashQ.eq("branch_id", branchId); payQ = payQ.eq("branch_id", branchId); taskQ = taskQ.eq("branch_id", branchId);
     }
 
-    const [ings, stock, prs, indents, cls, waste, cash, pays] = await Promise.all([
-      ingQ, stockQ, prQ, inQ, clQ, wasteQ, cashQ, payQ,
+    const [ings, stock, prs, indents, cls, waste, cash, pays, overdueTasks] = await Promise.all([
+      ingQ, stockQ, prQ, inQ, clQ, wasteQ, cashQ, payQ, taskQ,
     ]);
 
     const qty = new Map<string, number>();
@@ -88,6 +89,10 @@ export async function deriveAndSync(
     const payCount = (pays.data ?? []).length;
     if (payCount > 0) alerts.push({ key: "vendor_due", type: "vendor_payment_due", priority: "medium",
       title: `${payCount} vendor bill${payCount > 1 ? "s" : ""} unpaid`, body: "You have unpaid or part-paid purchase bills this month.", href: "/purchases" });
+
+    const overdueCount = (overdueTasks.data ?? []).length;
+    if (overdueCount > 0) alerts.push({ key: "tasks_overdue", type: "task_overdue", priority: "high",
+      title: `${overdueCount} task${overdueCount > 1 ? "s" : ""} overdue`, body: "Assigned tasks are past their due time.", href: "/operations/tasks" });
 
     // Reconcile against stored notifications.
     const { data: existing } = await supabase.from("notifications").select("id, key").eq("org_id", orgId);

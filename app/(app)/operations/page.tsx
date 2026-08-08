@@ -5,15 +5,17 @@ import Link from "next/link";
 import { getActiveContext } from "@/lib/auth/session";
 import { getOpsOverview } from "@/server/queries/operations";
 import { getInventoryCounts } from "@/server/queries/requests";
+import { getTaskStats } from "@/server/queries/tasks";
 import { Card, CardContent } from "@/components/ui/card";
 import { inr } from "@/lib/utils";
-import { ClipboardCheck, Trash2, CheckCircle2, Circle, PackageCheck, ShoppingBag, TrendingUp, Wallet } from "lucide-react";
+import { ClipboardCheck, Trash2, CheckCircle2, Circle, PackageCheck, ShoppingBag, TrendingUp, Wallet, ListChecks } from "lucide-react";
 
 export default async function OperationsPage() {
   const ctx = await getActiveContext();
-  const [o, inv] = await Promise.all([
+  const [o, inv, tasks] = await Promise.all([
     getOpsOverview(ctx!.orgId!, ctx!.branch?.id ?? null),
     getInventoryCounts(ctx!.orgId!, ctx!.branch?.id ?? null),
+    getTaskStats(ctx!.orgId!, ctx!.branch?.id ?? null),
   ]);
 
   return (
@@ -53,6 +55,26 @@ export default async function OperationsPage() {
             </Link>
           ))}
         </div>
+      </div>
+
+      {/* Tasks */}
+      <div>
+        <div className="mb-2 flex items-center gap-2 text-sm font-semibold"><ListChecks className="h-4 w-4 text-primary" /> Tasks</div>
+        <Link href="/operations/tasks"
+          className="flex items-center justify-between rounded-xl border bg-card p-4 transition active:scale-[.99] hover:border-primary/50">
+          <div>
+            <p className="font-medium">Team tasks</p>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              {tasks.total === 0 ? "Assign opening, cleaning, maintenance & more"
+                : `${tasks.done}/${tasks.total} done · ${tasks.pct}%${tasks.overdue ? ` · ${tasks.overdue} overdue` : ""}`}
+            </p>
+          </div>
+          {tasks.overdue > 0
+            ? <span className="rounded-full bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-700">{tasks.overdue} overdue</span>
+            : tasks.open > 0
+              ? <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800">{tasks.open} open</span>
+              : <span className="text-sm font-medium text-primary">Open →</span>}
+        </Link>
       </div>
 
       {/* Inventory & requests */}
