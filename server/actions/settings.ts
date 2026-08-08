@@ -2,6 +2,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { getActiveContext } from "@/lib/auth/session";
 import { revalidatePath } from "next/cache";
+import { isValidGSTIN, isValidStateCode, isValidEmail, isValidPhone, stateCodeFromGSTIN } from "@/lib/validators/gst";
 import type { ActionState } from "@/lib/types";
 
 export async function addBranch(_: ActionState | null, formData: FormData): Promise<ActionState> {
@@ -9,9 +10,11 @@ export async function addBranch(_: ActionState | null, formData: FormData): Prom
   if (!ctx?.orgId) return { error: "No active organization" };
   const name = String(formData.get("name") || "").trim();
   if (!name) return { error: "Branch name required" };
+  const state = String(formData.get("state_code") || "").trim();
+  if (state && !isValidStateCode(state)) return { error: "State code must be a valid GST state code (01–38)" };
   const supabase = await createClient();
   const { error } = await supabase.from("branches").insert({
-    org_id: ctx.orgId, name, state_code: String(formData.get("state_code") || "").trim() || null,
+    org_id: ctx.orgId, name, state_code: state || null,
   });
   if (error) return { error: error.message };
   revalidatePath("/settings/team");
@@ -33,10 +36,13 @@ export async function updateOrganization(input: OrgInput): Promise<ActionState> 
   const email = (input.email || "").trim();
 
   if (!name) return { error: "Organization name is required" };
-  if (gstin && gstin.length !== 15) return { error: "GSTIN must be 15 characters" };
-  if (state && !/^\d{2}$/.test(state)) return { error: "State code must be 2 digits" };
-  if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return { error: "Enter a valid email" };
-  if (phone && !/^[0-9+\-\s()]{6,20}$/.test(phone)) return { error: "Enter a valid phone number" };
+  const gstinUpper = gstin.toUpperCase();
+  if (gstin && !isValidGSTIN(gstinUpper)) return { error: "Enter a valid 15-character GSTIN (check the format and checksum)" };
+  if (state && !isValidStateCode(state)) return { error: "State code must be a valid GST state code (01–38)" };
+  if (gstin && state && stateCodeFromGSTIN(gstinUpper) !== state)
+    return { error: `GSTIN starts with state code ${stateCodeFromGSTIN(gstinUpper)}, which doesn't match the state code ${state}` };
+  if (email && !isValidEmail(email)) return { error: "Enter a valid email" };
+  if (phone && !isValidPhone(phone)) return { error: "Enter a valid 10-digit phone number" };
 
   const supabase = await createClient();
   const { error } = await supabase.from("organizations").update({
