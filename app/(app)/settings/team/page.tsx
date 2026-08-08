@@ -2,12 +2,16 @@ import type { Metadata } from "next";
 import { pageMetadata } from "@/lib/seo";
 import { getActiveContext } from "@/lib/auth/session";
 import { getSettings, getTeam } from "@/server/queries/settings";
+import { getBackups } from "@/server/queries/backups";
+import { ensureScheduledBackups } from "@/lib/backup-core";
+import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BranchForm } from "./branch-form";
 import { BranchManager } from "./branch-manager";
 import { OrgSettingsForm } from "./org-settings-form";
 import { TeamPanel } from "./team-panel";
 import { BackupRestore } from "./backup-restore";
+import { BackupCenter } from "./backup-center";
 
 export const metadata: Metadata = pageMetadata({ title: "Settings", description: "Manage your organization, branches and team members.", path: "/settings/team" });
 
@@ -16,6 +20,13 @@ export default async function SettingsPage() {
   const { org, branches } = await getSettings(ctx!.orgId!);
   const team = await getTeam(ctx!.orgId!);
   const canManage = ctx!.role === "owner" || ctx!.role === "admin";
+
+  // Automatic daily/weekly/monthly snapshots on admin activity (non-blocking of correctness).
+  if (canManage && ctx!.org) {
+    const sb = await createClient();
+    await ensureScheduledBackups(sb, ctx!.org, ctx!.user.id);
+  }
+  const backups = await getBackups(ctx!.orgId!);
 
   return (
     <div className="space-y-6">
@@ -50,9 +61,19 @@ export default async function SettingsPage() {
       </Card>
 
       <Card>
-        <CardHeader><CardTitle>Backup &amp; Restore</CardTitle></CardHeader>
-        <CardContent>
-          <BackupRestore canManage={ctx!.role === "owner"} />
+        <CardHeader><CardTitle>Automatic Backups</CardTitle></CardHeader>
+        <CardContent className="space-y-5">
+          <BackupCenter
+            rows={backups.rows}
+            lastBackup={backups.lastBackup}
+            dataSize={backups.dataSize}
+            canManage={canManage}
+            canRestore={ctx!.role === "owner"}
+          />
+          <div className="border-t pt-4">
+            <p className="mb-2 text-sm font-medium">Or use a backup file</p>
+            <BackupRestore canManage={ctx!.role === "owner"} />
+          </div>
         </CardContent>
       </Card>
     </div>
