@@ -18,3 +18,13 @@ export const BranchPerf = dynamic(
   () => import("./dashboard-charts").then((m) => m.BranchPerf),
   { ssr: false, loading: fallback }
 );
+
+export const TrendMulti = dynamic(
+  () => import("./dashboard-charts").then((m) => m.TrendMulti),
+  { ssr: false, loading: fallback }
+);
+
+export const CategoryBar = dynamic(
+  () => import("./dashboard-charts").then((m) => m.CategoryBar),
+  { ssr: false, loading: fallback }
+);

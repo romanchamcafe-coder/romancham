@@ -3,12 +3,13 @@ import { createClient } from "@/lib/supabase/server";
 import { deriveAndSync } from "@/server/notifications/derive";
 import { getNotifications } from "@/server/queries/notifications";
 import { getDashboard, getActivityCounts } from "@/server/queries/dashboard";
+import { getAnalytics } from "@/server/queries/analytics";
 import { AlertTriangle } from "lucide-react";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
-import { RevenueTrend, BranchPerf } from "@/components/charts/lazy-charts";
+import { RevenueTrend, BranchPerf, TrendMulti, CategoryBar } from "@/components/charts/lazy-charts";
 import { DateRangePicker } from "@/components/dashboard/date-range-picker";
 import { resolveRange, type RangeKey } from "@/lib/date-ranges";
 import type { Metadata } from "next";
@@ -29,6 +30,19 @@ function Trend({ value }: { value: number }) {
   return <span className={"inline-flex items-center gap-0.5 text-xs font-medium " + (up ? "text-green-600" : "text-red-600")}>{up ? "▲" : "▼"} {Math.abs(value)}%</span>;
 }
 
+function MiniCard({ label, value, trend, sub }: { label: string; value: string; trend?: number; sub?: string }) {
+  return (
+    <Card><CardContent className="pt-4">
+      <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
+      <p className="mt-1 text-lg font-bold tracking-tight">{value}</p>
+      <div className="mt-0.5">
+        {trend !== undefined ? <Trend value={trend} /> : sub ? <span className="text-xs text-muted-foreground">{sub}</span> : null}
+        {trend !== undefined && sub ? <span className="ml-1 text-xs text-muted-foreground">{sub}</span> : null}
+      </div>
+    </CardContent></Card>
+  );
+}
+
 export default async function DashboardPage({ searchParams }: { searchParams: Promise<{ range?: string; from?: string; to?: string }> }) {
   const ctx = await getActiveContext();
   if (!ctx?.orgId) return null;
@@ -43,10 +57,11 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
   const key = ((sp.range as RangeKey) || "30d");
   const r = resolveRange(key, sp.from, sp.to);
 
-  const [m, prev, counts] = await Promise.all([
+  const [m, prev, counts, a] = await Promise.all([
     getDashboard(ctx.orgId, ctx.branch?.id ?? null, r.from, r.to),
     getDashboard(ctx.orgId, ctx.branch?.id ?? null, r.prevFrom, r.prevTo),
     getActivityCounts(ctx.orgId, ctx.branch?.id ?? null),
+    getAnalytics(ctx.orgId, ctx.branch?.id ?? null),
   ]);
 
   const allZero = m.revenue === 0 && m.purchases === 0 && m.gross_profit === 0 && m.net_profit === 0;
@@ -121,6 +136,33 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
         </div>
       )}
 
+      {/* Today at a glance */}
+      <div>
+        <h2 className="mb-2 text-sm font-semibold text-muted-foreground">Today at a glance</h2>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+          <MiniCard label="Today's sales" value={inr(a.today.value)} trend={a.today.delta} sub="vs yest." />
+          <MiniCard label="This week" value={inr(a.week.value)} trend={a.week.delta} sub="WoW" />
+          <MiniCard label="This month" value={inr(a.month.value)} trend={a.month.delta} sub="MoM" />
+          <MiniCard label="Avg bill" value={inr(a.avgBill)} sub={`${a.orders} order${a.orders === 1 ? "" : "s"} today`} />
+          <MiniCard label="Orders today" value={String(a.orders)} />
+        </div>
+      </div>
+
+      {/* Operational metrics */}
+      <div>
+        <h2 className="mb-2 text-sm font-semibold text-muted-foreground">Operational metrics · this month</h2>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-8">
+          <MiniCard label="COGS" value={inr(a.cogs)} />
+          <MiniCard label="Prime cost %" value={`${a.primeCostPct}%`} sub="target ≤ 60%" />
+          <MiniCard label="Labour %" value={`${a.labourPct}%`} />
+          <MiniCard label="Inventory value" value={inr(a.inventoryValue)} />
+          <MiniCard label="Stock turnover" value={`${a.stockTurnover}×`} />
+          <MiniCard label="Wastage %" value={`${a.wastagePct}%`} />
+          <MiniCard label="EBITDA" value={inr(a.ebitda)} />
+          <MiniCard label="Cash flow" value={inr(a.cashFlow)} />
+        </div>
+      </div>
+
       <div className="grid gap-4 lg:grid-cols-2">
         <Card><CardHeader><CardTitle>Daily Revenue</CardTitle></CardHeader>
           <CardContent>{hasTrend ? <RevenueTrend data={m.daily_trend} /> :
@@ -128,6 +170,15 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
         <Card><CardHeader><CardTitle>Branch Performance</CardTitle></CardHeader>
           <CardContent>{hasBranch ? <BranchPerf data={m.branch_perf} /> :
             <EmptyState icon={<BarChart3 className="h-8 w-8" />} title="No branch sales yet" description="Sales by location appear here once you upload sales." primary={{ label: "Go to Sales", href: "/sales" }} />}</CardContent></Card>
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card><CardHeader><CardTitle>Sales · Purchases · Expenses (14 days)</CardTitle></CardHeader>
+          <CardContent>{a.trend.some((t) => t.sales || t.purchases || t.expenses) ? <TrendMulti data={a.trend} /> :
+            <EmptyState icon={<LineChart className="h-8 w-8" />} title="No activity yet" description="Daily sales, purchases and expenses will trend here." />}</CardContent></Card>
+        <Card><CardHeader><CardTitle>Revenue by category · this month</CardTitle></CardHeader>
+          <CardContent>{a.categories.length ? <CategoryBar data={a.categories} /> :
+            <EmptyState icon={<BarChart3 className="h-8 w-8" />} title="No category sales yet" description="Sales split by department/category appears here." />}</CardContent></Card>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-3">

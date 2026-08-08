@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getPnl } from "@/server/queries/finance";
 import { getInventory } from "@/server/queries/inventory";
 import { WASTAGE_REASON_LABEL } from "@/lib/ops/checklists";
+import { inr } from "@/lib/utils";
 import type { Report } from "@/lib/report-defs";
 export { REPORT_DEFS } from "@/lib/report-defs";
 export type { Report, ReportKey } from "@/lib/report-defs";
@@ -95,22 +96,22 @@ export async function getReport(
 
     case "pnl": {
       const p = await getPnl(orgId, branchId, from, to);
-      const ebitda = r2(p.netProfit + 0); // no D&A/interest tracked → EBITDA ≈ operating profit
+      const ebitda = r2(p.netProfit); // no D&A/interest tracked → EBITDA ≈ operating profit
       const rows: (string | number)[][] = [
-        ["Revenue", r2(p.revenue)],
-        ["Food cost (purchases)", r2(p.purchases)],
-        ["Gross profit", r2(p.grossProfit)],
-        ["Operating expenses", r2(p.expenses)],
-        ["— of which labour", r2(p.labour)],
-        ["Wastage", r2(p.wastage)],
-        ["Net profit", r2(p.netProfit)],
-        ["EBITDA (approx.)", ebitda],
-        ["Food cost %", p.foodCostPct],
-        ["Prime cost %", p.primeCostPct],
-        ["Labour %", p.labourPct],
-        ["Net margin %", p.netMarginPct],
+        ["Revenue", inr(p.revenue)],
+        ["Food cost (purchases)", inr(p.purchases)],
+        ["Gross profit", inr(p.grossProfit)],
+        ["Operating expenses", inr(p.expenses)],
+        ["— of which labour", inr(p.labour)],
+        ["Wastage", inr(p.wastage)],
+        ["Net profit", inr(p.netProfit)],
+        ["EBITDA (approx.)", inr(ebitda)],
+        ["Food cost %", `${p.foodCostPct}%`],
+        ["Prime cost %", `${p.primeCostPct}%`],
+        ["Labour %", `${p.labourPct}%`],
+        ["Net margin %", `${p.netMarginPct}%`],
       ];
-      return { headers: ["Metric", "Value"], rows, currencyCols: [1], note: "EBITDA is approximated as operating profit (no depreciation/interest tracked). % rows are percentages, not ₹." };
+      return { headers: ["Metric", "Value"], rows, note: "EBITDA is approximated as operating profit (no depreciation/interest is tracked)." };
     }
 
     case "inventory_valuation": {
