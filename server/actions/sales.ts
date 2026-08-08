@@ -53,18 +53,10 @@ export async function importPosSales(
     );
   } catch { /* ignore logging failures */ }
 
-  // auto-backflush raw materials / finished stock for the imported dates
-  if (dates.length) {
-    const sorted = (dates as string[]).slice().sort();
-    try {
-      await supabase.rpc("sync_sales_consumption", {
-        p: { org_id: ctx.orgId, branch_id: branchId, from: sorted[0], to: sorted[sorted.length - 1] },
-      });
-    } catch { /* best-effort; stock can be re-synced manually */ }
-  }
+  // NOTE: Sales do NOT change stock. Inventory is reduced only by production
+  // (raw-material issue) and manual stock adjustments in the Inventory module.
 
   revalidatePath("/sales");
-  revalidatePath("/inventory");
   revalidatePath("/dashboard");
   return { ok: true, imported };
 }
@@ -104,43 +96,10 @@ export async function createManualSale(input: ManualSaleInput): Promise<ActionSt
   });
   if (error) return { error: error.message };
 
-  // auto-backflush raw materials / finished stock for this sale date
-  try {
-    await supabase.rpc("sync_sales_consumption", {
-      p: { org_id: ctx.orgId, branch_id: branchId, from: date, to: date },
-    });
-  } catch { /* best-effort; stock can be re-synced manually */ }
-
+  // Sales do not change stock (see importPosSales note).
   revalidatePath("/sales");
-  revalidatePath("/inventory");
   revalidatePath("/dashboard");
   return { ok: true };
-}
-
-export async function resyncSalesConsumption(from: string, to: string): Promise<ActionState & { matched?: number; unmatched?: string[] }> {
-  const ctx = await getActiveContext();
-  if (!ctx?.orgId) return { error: "No active organization" };
-  const branchId = ctx.branch?.id;
-  if (!branchId) return { error: "No location/branch selected" };
-  const f = (from || "").trim(), t = (to || "").trim();
-  if (!f || !t) return { error: "Pick a start and end date" };
-
-  const supabase = await createClient();
-  const { data, error } = await supabase.rpc("sync_sales_consumption", {
-    p: { org_id: ctx.orgId, branch_id: branchId, from: f, to: t },
-  });
-  if (error) return { error: error.message };
-  revalidatePath("/inventory");
-  revalidatePath("/dashboard");
-  const res = (data ?? {}) as { matched?: number; unmatched?: string[] };
-  return { ok: true, matched: res.matched ?? 0, unmatched: res.unmatched ?? [] };
-}
-
-async function resyncDates(supabase: any, orgId: string, branchId: string, dates: (string | null | undefined)[]) {
-  const uniq = [...new Set(dates.filter(Boolean))] as string[];
-  for (const d of uniq) {
-    try { await supabase.rpc("sync_sales_consumption", { p: { org_id: orgId, branch_id: branchId, from: d, to: d } }); } catch { /* best-effort */ }
-  }
 }
 
 export async function updateSale(id: string, input: ManualSaleInput): Promise<ActionState> {
@@ -157,8 +116,6 @@ export async function updateSale(id: string, input: ManualSaleInput): Promise<Ac
   if (total === null) return { error: "Enter a valid final total" };
 
   const supabase = await createClient();
-  const { data: existing } = await supabase.from("pos_sales").select("sale_date").eq("id", id).eq("org_id", ctx.orgId).maybeSingle();
-
   const { error } = await supabase.from("pos_sales").update({
     sale_date: date, date_raw: date,
     item_name: item,
@@ -171,9 +128,7 @@ export async function updateSale(id: string, input: ManualSaleInput): Promise<Ac
   }).eq("id", id).eq("org_id", ctx.orgId).eq("branch_id", branchId);
   if (error) return { error: error.message };
 
-  await resyncDates(supabase, ctx.orgId, branchId, [date, existing?.sale_date]);
   revalidatePath("/sales");
-  revalidatePath("/inventory");
   revalidatePath("/dashboard");
   return { ok: true };
 }
@@ -186,13 +141,10 @@ export async function deleteSale(id: string): Promise<ActionState> {
   if (!id) return { error: "Missing row id" };
 
   const supabase = await createClient();
-  const { data: existing } = await supabase.from("pos_sales").select("sale_date").eq("id", id).eq("org_id", ctx.orgId).maybeSingle();
   const { error } = await supabase.from("pos_sales").delete().eq("id", id).eq("org_id", ctx.orgId).eq("branch_id", branchId);
   if (error) return { error: error.message };
 
-  await resyncDates(supabase, ctx.orgId, branchId, [existing?.sale_date]);
   revalidatePath("/sales");
-  revalidatePath("/inventory");
   revalidatePath("/dashboard");
   return { ok: true };
 }
