@@ -1,5 +1,5 @@
 import {
-  LayoutDashboard, ClipboardCheck, Boxes, Store, Tags, Ruler, ChefHat, Factory, ShoppingCart, IndianRupee, Package, Receipt, Settings, ScrollText,
+  LayoutDashboard, ClipboardCheck, Boxes, Store, Tags, Ruler, ChefHat, Factory, ShoppingCart, IndianRupee, Package, Receipt, Settings, ScrollText, BarChart3,
 } from "lucide-react";
 
 export const NAV = [
@@ -15,6 +15,7 @@ export const NAV = [
   { href: "/sales", label: "Sales", icon: IndianRupee },
   { href: "/inventory", label: "Inventory", icon: Package },
   { href: "/expenses", label: "Expenses", icon: Receipt },
+  { href: "/reports", label: "Reports", icon: BarChart3 },
   { href: "/activity", label: "Activity Log", icon: ScrollText },
   { href: "/settings/team", label: "Settings", icon: Settings },
 ];

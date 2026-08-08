@@ -32,3 +32,9 @@
 }
 * { border-color: hsl(var(--border)); }
 body { background: hsl(var(--background)); color: hsl(var(--foreground)); }
+
+@media print {
+  aside, header, .no-print { display: none !important; }
+  main { padding: 0 !important; }
+  body { background: #fff; }
+}
