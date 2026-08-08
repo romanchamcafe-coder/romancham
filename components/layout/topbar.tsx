@@ -3,12 +3,16 @@ import { useState, useEffect } from "react";
 import { signOut } from "@/server/actions/auth";
 import { Button } from "@/components/ui/button";
 import { MobileNav } from "./mobile-nav";
+import { NotificationBell } from "./notification-bell";
+import type { Notification } from "@/server/queries/notifications";
 import { LogOut } from "lucide-react";
 
-export function Topbar({ orgName, branches, activeBranch }: {
+export function Topbar({ orgName, branches, activeBranch, notifications, unread }: {
   orgName: string;
   branches: { id: string; name: string }[];
   activeBranch: string | null;
+  notifications: Notification[];
+  unread: number;
 }) {
   const [confirm, setConfirm] = useState(false);
 
@@ -36,6 +40,7 @@ export function Topbar({ orgName, branches, activeBranch }: {
           className="h-9 rounded-md border border-input bg-background px-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
           {branches.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
         </select>
+        <NotificationBell items={notifications} unread={unread} />
         <Button variant="ghost" size="sm" onClick={() => setConfirm(true)} aria-haspopup="dialog"><LogOut className="h-4 w-4" /> Sign out</Button>
       </div>
 

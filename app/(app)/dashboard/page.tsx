@@ -1,5 +1,10 @@
 import { getActiveContext } from "@/lib/auth/session";
+import { createClient } from "@/lib/supabase/server";
+import { deriveAndSync } from "@/server/notifications/derive";
+import { getNotifications } from "@/server/queries/notifications";
 import { getDashboard, getActivityCounts } from "@/server/queries/dashboard";
+import { AlertTriangle } from "lucide-react";
+import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -27,6 +32,13 @@ function Trend({ value }: { value: number }) {
 export default async function DashboardPage({ searchParams }: { searchParams: Promise<{ range?: string; from?: string; to?: string }> }) {
   const ctx = await getActiveContext();
   if (!ctx?.orgId) return null;
+
+  // Refresh the alert engine from live data, then read the current alerts.
+  const sb = await createClient();
+  await deriveAndSync(sb, ctx.orgId, ctx.branch?.id ?? null);
+  const notif = await getNotifications(ctx.orgId);
+  const topAlerts = notif.items.filter((n) => !n.read_at).slice(0, 4);
+
   const sp = await searchParams;
   const key = ((sp.range as RangeKey) || "30d");
   const r = resolveRange(key, sp.from, sp.to);
@@ -69,6 +81,26 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
         </div>
         <DateRangePicker current={key} from={r.from} to={r.to} />
       </div>
+
+      {topAlerts.length > 0 && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50/60 p-3">
+          <div className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-amber-800">
+            <AlertTriangle className="h-4 w-4" aria-hidden /> Needs attention ({notif.unread})
+          </div>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {topAlerts.map((n) => (
+              <Link key={n.id} href={n.href ?? "/dashboard"}
+                className="flex items-start gap-2 rounded-md bg-card p-2.5 text-sm hover:border-primary/50 border">
+                <span className={`mt-1 h-2 w-2 shrink-0 rounded-full ${n.priority === "critical" ? "bg-red-500" : n.priority === "high" ? "bg-amber-500" : "bg-blue-500"}`} aria-hidden />
+                <span className="min-w-0">
+                  <span className="block font-medium">{n.title}</span>
+                  {n.body && <span className="block text-xs text-muted-foreground">{n.body}</span>}
+                </span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
         {kpis.map((k) => (
