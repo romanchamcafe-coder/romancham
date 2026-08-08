@@ -31,10 +31,10 @@ export default async function InventoryPage() {
         <AdjustForm items={items} />
       </div>
 
-      <div className="grid grid-cols-3 gap-4">
-        <Card><CardContent className="pt-6"><p className="text-xs text-muted-foreground">Items tracked</p><p className="mt-1 text-2xl font-bold">{rows.length}</p></CardContent></Card>
-        <Card><CardContent className="pt-6"><p className="text-xs text-muted-foreground">Low / out of stock</p><p className="mt-1 text-2xl font-bold">{lowCount}</p></CardContent></Card>
-        <Card><CardContent className="pt-6"><p className="text-xs text-muted-foreground">Stock value (FIFO)</p><p className="mt-1 text-2xl font-bold">{inr(totalValue)}</p></CardContent></Card>
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+        <Card><CardContent className="pt-6"><p className="text-xs text-muted-foreground">Items tracked</p><p className="mt-1 text-xl font-bold sm:text-2xl">{rows.length}</p></CardContent></Card>
+        <Card><CardContent className="pt-6"><p className="text-xs text-muted-foreground">Low / out of stock</p><p className="mt-1 text-xl font-bold sm:text-2xl">{lowCount}</p></CardContent></Card>
+        <Card className="col-span-2 sm:col-span-1"><CardContent className="pt-6"><p className="text-xs text-muted-foreground">Stock value (FIFO)</p><p className="mt-1 text-xl font-bold sm:text-2xl">{inr(totalValue)}</p></CardContent></Card>
       </div>
 
       <Card className="overflow-x-auto">

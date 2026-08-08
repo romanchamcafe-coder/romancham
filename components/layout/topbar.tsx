@@ -29,19 +29,21 @@ export function Topbar({ orgName, branches, activeBranch, notifications, unread 
   }
 
   return (
-    <header className="flex h-14 items-center justify-between border-b bg-card px-4">
-      <div className="flex items-center gap-2">
+    <header className="flex h-14 items-center justify-between gap-2 border-b bg-card px-3 sm:px-4">
+      <div className="flex min-w-0 items-center gap-2">
         <MobileNav />
-        <div className="font-semibold">{orgName}</div>
+        <div className="truncate font-semibold">{orgName}</div>
       </div>
-      <div className="flex items-center gap-3">
+      <div className="flex shrink-0 items-center gap-1.5 sm:gap-3">
         <label htmlFor="branch-switch" className="sr-only">Select branch</label>
         <select id="branch-switch" aria-label="Select branch" value={activeBranch ?? ""} onChange={(e) => setBranch(e.target.value)}
-          className="h-9 rounded-md border border-input bg-background px-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
+          className="h-9 max-w-[36vw] rounded-md border border-input bg-background px-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary sm:max-w-none">
           {branches.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
         </select>
         <NotificationBell items={notifications} unread={unread} />
-        <Button variant="ghost" size="sm" onClick={() => setConfirm(true)} aria-haspopup="dialog"><LogOut className="h-4 w-4" /> Sign out</Button>
+        <Button variant="ghost" size="sm" onClick={() => setConfirm(true)} aria-haspopup="dialog" aria-label="Sign out">
+          <LogOut className="h-4 w-4" /> <span className="hidden sm:inline">Sign out</span>
+        </Button>
       </div>
 
       {confirm && (
