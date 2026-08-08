@@ -67,6 +67,7 @@ export async function signIn(_: ActionState | null, formData: FormData): Promise
   if (error) return { error: friendly(error.message) };
   // Best-effort: record last login (ignored if the user has no membership yet).
   try { await supabase.rpc("touch_last_login"); } catch {}
+  try { const { logActivity } = await import("@/server/audit"); await logActivity({ action: "login", entity: "auth" }); } catch {}
   const next = String(formData.get("next") || "");
   const dest = next.startsWith("/") && !next.startsWith("//") ? next : "/dashboard";
   redirect(dest);

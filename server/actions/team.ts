@@ -5,6 +5,7 @@ import { getActiveContext } from "@/lib/auth/session";
 import { revalidatePath } from "next/cache";
 import { ROLES } from "@/lib/auth/permissions";
 import { SITE_URL } from "@/lib/seo";
+import { logActivity } from "@/server/audit";
 import type { ActionState } from "@/lib/types";
 
 const ASSIGNABLE = ROLES as readonly string[]; // 8 SaaS roles
@@ -45,6 +46,7 @@ export async function updateMemberRole(userId: string, role: string): Promise<Ac
   }
   const { error } = await supabase.from("memberships").update({ role }).eq("org_id", ctx.orgId).eq("user_id", userId);
   if (error) return { error: error.message };
+  await logActivity({ action: "role_change", entity: "memberships", entityId: userId, newValue: { role } });
   revalidatePath("/settings/team");
   return { ok: true };
 }
@@ -67,6 +69,7 @@ export async function setMemberStatus(userId: string, status: "active" | "suspen
     .update({ status, is_active: status === "active" })
     .eq("org_id", ctx.orgId).eq("user_id", userId);
   if (error) return { error: error.message };
+  await logActivity({ action: status === "suspended" ? "suspend" : "reactivate", entity: "memberships", entityId: userId, newValue: { status } });
   revalidatePath("/settings/team");
   return { ok: true };
 }
@@ -104,6 +107,7 @@ export async function removeMember(userId: string): Promise<ActionState> {
   const { error } = await supabase.from("memberships")
     .update({ is_active: false, status: "removed" }).eq("org_id", ctx.orgId).eq("user_id", userId);
   if (error) return { error: error.message };
+  await logActivity({ action: "remove_member", entity: "memberships", entityId: userId });
   revalidatePath("/settings/team");
   return { ok: true };
 }
@@ -150,6 +154,7 @@ export async function inviteTeammate(input: {
     if (error) return { error: error.message };
     token = data.token;
   }
+  await logActivity({ action: "invite", entity: "invitations", newValue: { email, role } });
   revalidatePath("/settings/team");
   return { ok: true, link: `${await siteOrigin()}/invite/${token}` };
 }
@@ -176,6 +181,7 @@ export async function cancelInvitation(id: string): Promise<ActionState> {
   const { error } = await supabase.from("invitations")
     .update({ status: "cancelled" }).eq("id", id).eq("org_id", ctx.orgId);
   if (error) return { error: error.message };
+  await logActivity({ action: "cancel_invite", entity: "invitations", entityId: id });
   revalidatePath("/settings/team");
   return { ok: true };
 }
