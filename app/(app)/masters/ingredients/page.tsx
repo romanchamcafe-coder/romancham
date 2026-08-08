@@ -3,8 +3,10 @@ import { pageMetadata } from "@/lib/seo";
 import Link from "next/link";
 import { getActiveContext } from "@/lib/auth/session";
 import { getMaterialFormData, getMaterials } from "@/server/queries/masters";
+import { createClient } from "@/lib/supabase/server";
 import { IngredientForm } from "./ingredient-form";
 import { IngredientsTable } from "./ingredients-table";
+import { ArchivedPanel } from "./archived-panel";
 import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = pageMetadata({ title: "Ingredients", description: "Maintain your ingredient master with units, costs, reorder levels and fulfilment type.", path: "/masters/ingredients" });
@@ -15,6 +17,9 @@ export default async function MaterialsPage({ searchParams }: { searchParams: Pr
   const active = type === "purchase" || type === "sales" ? type : "all";
   const { categories, units, vendors } = await getMaterialFormData(ctx!.orgId!);
   const items = await getMaterials(ctx!.orgId!, active === "all" ? undefined : active);
+  const sb = await createClient();
+  const { data: archived } = await sb.from("ingredients").select("id, name")
+    .eq("org_id", ctx!.orgId!).eq("is_active", false).order("name").limit(50);
   const tabs = [["all", "All"], ["purchase", "Purchase"], ["sales", "Sales"]] as const;
 
   return (
@@ -33,6 +38,7 @@ export default async function MaterialsPage({ searchParams }: { searchParams: Pr
       </div>
 
       <IngredientsTable items={items as any} categories={categories} units={units} vendors={vendors} />
+      <ArchivedPanel items={archived ?? []} />
     </div>
   );
 }

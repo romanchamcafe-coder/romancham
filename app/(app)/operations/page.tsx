@@ -7,6 +7,7 @@ import { getOpsOverview } from "@/server/queries/operations";
 import { getInventoryCounts } from "@/server/queries/requests";
 import { getTaskStats } from "@/server/queries/tasks";
 import { Card, CardContent } from "@/components/ui/card";
+import { AutoDraftButton } from "@/components/ops/auto-draft-button";
 import { inr } from "@/lib/utils";
 import { ClipboardCheck, Trash2, CheckCircle2, Circle, PackageCheck, ShoppingBag, TrendingUp, Wallet, ListChecks } from "lucide-react";
 
@@ -103,9 +104,13 @@ export default async function OperationsPage() {
           </Link>
         </div>
         {inv.low > 0 && (
-          <Link href="/operations/indents" className="mt-3 flex items-center gap-2 rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800 active:scale-[.99]">
-            <ShoppingBag className="h-4 w-4" /> <b>{inv.low}</b> item{inv.low > 1 ? "s" : ""} at or below reorder level — tap to raise an indent.
-          </Link>
+          <div className="mt-3 flex flex-wrap items-center gap-3 rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800">
+            <span className="flex items-center gap-2"><ShoppingBag className="h-4 w-4" /> <b>{inv.low}</b> item{inv.low > 1 ? "s" : ""} at or below reorder level.</span>
+            <span className="ml-auto flex gap-2">
+              <Link href="/operations/indents" className="font-medium underline">Raise indent</Link>
+              <AutoDraftButton />
+            </span>
+          </div>
         )}
       </div>
 

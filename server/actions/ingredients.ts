@@ -82,3 +82,15 @@ export async function removeIngredient(id: string): Promise<ActionState> {
   revalidatePath("/purchases/new");
   return { ok: true };
 }
+
+// Phase 13 — Data safety: soft-deleted ingredients can be restored (undo delete).
+export async function restoreIngredient(id: string): Promise<ActionState> {
+  const ctx = await getActiveContext();
+  if (!ctx?.orgId || !id) return { error: "No active organization" };
+  const supabase = await createClient();
+  const { error } = await supabase.from("ingredients").update({ is_active: true }).eq("id", id).eq("org_id", ctx.orgId);
+  if (error) return { error: error.message };
+  revalidatePath("/masters/ingredients");
+  revalidatePath("/purchases/new");
+  return { ok: true };
+}
