@@ -40,13 +40,17 @@ export async function importPosSales(
     imported += chunk.length;
   }
 
-  // record import history (best-effort; never block the import result)
+  // record import history + connector sync (best-effort; never block the import result)
   try {
     await supabase.from("pos_imports").insert({
       org_id: ctx.orgId, branch_id: branchId, file_path: fileName ?? "sales.csv",
-      status: "done", rows_total: rows.length, rows_ok: imported,
-      mapping: { dates, batch },
+      status: "done", rows_total: rows.length, rows_ok: imported, rows_error: rows.length - imported,
+      provider: "petpooja", source: "csv", mapping: { dates, batch },
     });
+    await supabase.from("pos_connectors").upsert(
+      { org_id: ctx.orgId, provider: "petpooja", status: "connected", last_sync_at: new Date().toISOString(), created_by: ctx.user.id },
+      { onConflict: "org_id,provider" },
+    );
   } catch { /* ignore logging failures */ }
 
   // auto-backflush raw materials / finished stock for the imported dates
