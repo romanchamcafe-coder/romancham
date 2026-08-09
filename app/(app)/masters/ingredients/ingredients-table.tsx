@@ -113,13 +113,6 @@ export function IngredientsTable({ items, categories, units, vendors }: {
               </select>
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="ei-fulfil">Fulfillment <span className="text-xs font-normal text-muted-foreground">(sales items)</span></Label>
-              <select id="ei-fulfil" className={sel} value={v.fulfillment} onChange={set("fulfillment")}>
-                <option value="direct">Made to order (deduct raw on sale)</option>
-                <option value="stock">Made to stock (produce batches)</option>
-              </select>
-            </div>
-            <div className="space-y-1.5">
               <Label htmlFor="ei-cat">Category</Label>
               <select id="ei-cat" className={sel} value={v.category_id} onChange={set("category_id")}>
                 <option value="">—</option>
@@ -133,15 +126,19 @@ export function IngredientsTable({ items, categories, units, vendors }: {
                 {units.map((u) => <option key={u.id} value={u.id}>{u.name}{u.abbr ? ` (${u.abbr})` : ""}</option>)}
               </select>
             </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="ei-vendor">Default vendor</Label>
-              <select id="ei-vendor" className={sel} value={v.default_vendor_id} onChange={set("default_vendor_id")}>
-                <option value="">—</option>
-                {vendors.map((ve) => <option key={ve.id} value={ve.id}>{ve.name}</option>)}
-              </select>
-            </div>
+            {v.material_type !== "sales" && (
+              <div className="space-y-1.5">
+                <Label htmlFor="ei-vendor">Default vendor</Label>
+                <select id="ei-vendor" className={sel} value={v.default_vendor_id} onChange={set("default_vendor_id")}>
+                  <option value="">—</option>
+                  {vendors.map((ve) => <option key={ve.id} value={ve.id}>{ve.name}</option>)}
+                </select>
+              </div>
+            )}
             <div className="space-y-1.5"><Label htmlFor="ei-gst">GST %</Label><Input id="ei-gst" type="number" step="0.01" value={v.default_gst_rate} onChange={set("default_gst_rate")} /></div>
-            <div className="space-y-1.5"><Label htmlFor="ei-reorder">Reorder level</Label><Input id="ei-reorder" type="number" step="0.0001" value={v.reorder_level} onChange={set("reorder_level")} /></div>
+            {v.material_type !== "sales" && (
+              <div className="space-y-1.5"><Label htmlFor="ei-reorder">Reorder level</Label><Input id="ei-reorder" type="number" step="0.0001" value={v.reorder_level} onChange={set("reorder_level")} /></div>
+            )}
             <div className="space-y-1.5"><Label htmlFor="ei-hsn">HSN code</Label><Input id="ei-hsn" value={v.hsn_code} onChange={set("hsn_code")} placeholder="optional" /></div>
           </div>
         )}

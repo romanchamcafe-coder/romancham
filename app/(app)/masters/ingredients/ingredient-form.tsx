@@ -12,24 +12,19 @@ export function IngredientForm({ categories, units, vendors }: { categories: Opt
   const [state, action, pending] = useActionState(createIngredient, null);
   const ref = useRef<HTMLFormElement>(null);
   const [uomError, setUomError] = useState("");
-  useEffect(() => { if (state?.ok) { ref.current?.reset(); setUomError(""); } }, [state]);
+  const [type, setType] = useState("purchase");
+  const isSales = type === "sales";
+  useEffect(() => { if (state?.ok) { ref.current?.reset(); setUomError(""); setType("purchase"); } }, [state]);
   return (
     <form ref={ref} action={action} className="rounded-lg border bg-card p-4">
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <div className="space-y-1.5"><Label>Ingredient name</Label><Input name="name" required placeholder="e.g. Amul Butter / Chocolate Brownie" aria-label="Ingredient name" /></div>
         <div className="space-y-1.5">
           <Label>Type</Label>
-          <select name="material_type" defaultValue="purchase" className={sel} aria-label="Ingredient type">
+          <select name="material_type" value={type} onChange={(e) => setType(e.target.value)} className={sel} aria-label="Ingredient type">
             <option value="purchase">Purchase (raw item you buy)</option>
             <option value="sales">Sales (product you sell)</option>
             <option value="both">Both</option>
-          </select>
-        </div>
-        <div className="space-y-1.5">
-          <Label>Fulfillment <span className="text-xs font-normal text-muted-foreground">(sales items)</span></Label>
-          <select name="fulfillment" defaultValue="direct" className={sel} aria-label="Fulfillment type">
-            <option value="direct">Made to order (deduct raw on sale)</option>
-            <option value="stock">Made to stock (produce batches)</option>
           </select>
         </div>
         <div className="space-y-1.5">
@@ -56,14 +51,18 @@ export function IngredientForm({ categories, units, vendors }: { categories: Opt
           </select>
           {uomError && <p id="uom-error" className="text-sm text-destructive">{uomError}</p>}
         </div>
-        <div className="space-y-1.5">
-          <Label>Default vendor</Label>
-          <select name="default_vendor_id" className={sel} aria-label="Default vendor"><option value="">—</option>
-            {vendors.map((v) => <option key={v.id} value={v.id}>{v.name}</option>)}
-          </select>
-        </div>
+        {!isSales && (
+          <div className="space-y-1.5">
+            <Label>Default vendor</Label>
+            <select name="default_vendor_id" className={sel} aria-label="Default vendor"><option value="">—</option>
+              {vendors.map((v) => <option key={v.id} value={v.id}>{v.name}</option>)}
+            </select>
+          </div>
+        )}
         <div className="space-y-1.5"><Label>GST %</Label><Input name="default_gst_rate" type="number" step="0.01" placeholder="5" aria-label="Default GST rate percent" /></div>
-        <div className="space-y-1.5"><Label>Reorder level</Label><Input name="reorder_level" type="number" step="0.0001" placeholder="0" aria-label="Reorder level" /></div>
+        {!isSales && (
+          <div className="space-y-1.5"><Label>Reorder level</Label><Input name="reorder_level" type="number" step="0.0001" placeholder="0" aria-label="Reorder level" /></div>
+        )}
         <div className="space-y-1.5"><Label>HSN code</Label><Input name="hsn_code" placeholder="optional" aria-label="HSN code" /></div>
       </div>
       <div className="mt-3 flex items-center justify-end gap-3">
