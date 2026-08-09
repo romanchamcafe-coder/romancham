@@ -38,3 +38,70 @@ body { background: hsl(var(--background)); color: hsl(var(--foreground)); }
   main { padding: 0 !important; }
   body { background: #fff; }
 }
+
+/* ===== App splash screen (PWA launch) =====
+   CSS-driven so it works identically on iOS Safari and Android Chrome
+   home-screen PWAs. The overlay carries its own fade-out animation as a
+   safety net, so the user is never stuck even if JavaScript fails. */
+.rc-splash {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 28px;
+  background: #fbf7f0; /* warm cream, matches Romancham */
+  /* extend fill behind iOS status bar / home indicator */
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+  /* Safety net: fades itself out even if the JS timer never runs. */
+  animation: rcSplashOut 500ms ease 2200ms forwards;
+}
+.rc-splash__glow {
+  position: absolute;
+  width: min(70vw, 420px);
+  aspect-ratio: 1 / 1;
+  border-radius: 50%;
+  background: radial-gradient(circle, hsla(24, 90%, 48%, 0.16) 0%, hsla(24, 90%, 48%, 0) 70%);
+  animation: rcGlow 2.4s ease-in-out infinite;
+  pointer-events: none;
+}
+.rc-splash__logo {
+  width: min(62vw, 260px);
+  height: auto;
+  opacity: 0;
+  transform: translateY(8px) scale(0.92);
+  animation: rcLogoIn 800ms cubic-bezier(0.22, 1, 0.36, 1) 120ms forwards;
+  will-change: opacity, transform;
+}
+.rc-splash__bar {
+  position: relative;
+  width: 132px;
+  height: 3px;
+  border-radius: 999px;
+  background: hsla(24, 90%, 48%, 0.15);
+  overflow: hidden;
+  opacity: 0;
+  animation: rcFadeIn 500ms ease 500ms forwards;
+}
+.rc-splash__bar::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  width: 40%;
+  border-radius: 999px;
+  background: hsl(24, 90%, 48%);
+  animation: rcBar 1.2s ease-in-out 0.6s infinite;
+}
+@keyframes rcLogoIn { to { opacity: 1; transform: translateY(0) scale(1); } }
+@keyframes rcFadeIn { to { opacity: 1; } }
+@keyframes rcGlow { 0%, 100% { transform: scale(0.9); opacity: 0.7; } 50% { transform: scale(1.05); opacity: 1; } }
+@keyframes rcBar { 0% { transform: translateX(-120%); } 100% { transform: translateX(320%); } }
+@keyframes rcSplashOut { to { opacity: 0; visibility: hidden; } }
+@media (prefers-reduced-motion: reduce) {
+  .rc-splash { animation: rcSplashOut 200ms ease 600ms forwards; }
+  .rc-splash__logo { animation: rcFadeIn 200ms ease forwards; transform: none; }
+  .rc-splash__glow, .rc-splash__bar::after { animation: none; }
+}

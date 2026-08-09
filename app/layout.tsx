@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import { AppSplashScreen } from "@/components/ui/app-splash-screen";
 import {
   SITE_URL,
   SITE_NAME,
@@ -78,7 +79,10 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className="min-h-screen antialiased">{children}</body>
+      <body className="min-h-screen antialiased">
+        <AppSplashScreen />
+        {children}
+      </body>
     </html>
   );
 }
