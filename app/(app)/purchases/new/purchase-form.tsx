@@ -1,7 +1,7 @@
 "use client";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { createPurchase } from "@/server/actions/purchases";
+import { createPurchase, updatePurchase } from "@/server/actions/purchases";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,18 +20,24 @@ type Line = { category: string; ingredient_id: string; uom: string; qty: string;
 const blank: Line = { category: "", ingredient_id: "", uom: "", qty: "1", rate: "", with_gst: "" };
 const fieldCls = "h-9 w-full rounded-md border border-input bg-background px-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary";
 
-export function PurchaseForm({ vendors, ingredients, branches, defaultBranchId }: {
+type EditInitial = {
+  vendor_id: string; branch_id: string; payment_mode: string; bill_no: string; bill_date: string;
+  lines: Line[];
+};
+
+export function PurchaseForm({ vendors, ingredients, branches, defaultBranchId, mode = "create", purchaseId, initial }: {
   vendors: Vendor[]; ingredients: Ingredient[]; branches: Branch[]; defaultBranchId: string;
+  mode?: "create" | "edit"; purchaseId?: string; initial?: EditInitial;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
-  const [paymentMode, setPaymentMode] = useState("credit");
-  const [vendorId, setVendorId] = useState("");
-  const [branchId, setBranchId] = useState(defaultBranchId || branches[0]?.id || "");
-  const [billNo, setBillNo] = useState("");
-  const [billDate, setBillDate] = useState(new Date().toISOString().slice(0, 10));
-  const [lines, setLines] = useState<Line[]>([{ ...blank }]);
+  const [paymentMode, setPaymentMode] = useState(initial?.payment_mode || "credit");
+  const [vendorId, setVendorId] = useState(initial?.vendor_id || "");
+  const [branchId, setBranchId] = useState(initial?.branch_id || defaultBranchId || branches[0]?.id || "");
+  const [billNo, setBillNo] = useState(initial?.bill_no || "");
+  const [billDate, setBillDate] = useState(initial?.bill_date || new Date().toISOString().slice(0, 10));
+  const [lines, setLines] = useState<Line[]>(initial?.lines?.length ? initial.lines.map((l) => ({ ...l })) : [{ ...blank }]);
 
   const update = (i: number, patch: Partial<Line>) =>
     setLines((ls) => ls.map((l, idx) => (idx === i ? { ...l, ...patch } : l)));
@@ -67,18 +73,21 @@ export function PurchaseForm({ vendors, ingredients, branches, defaultBranchId }
 
   function submit() {
     setError(null);
+    const payload = {
+      vendor_id: vendorId,
+      branch_id: branchId,
+      payment_mode: paymentMode as "petty_cash" | "credit",
+      bill_no: billNo,
+      bill_date: billDate,
+      items: lines.map((l) => ({
+        ingredient_id: l.ingredient_id, category: l.category, uom: l.uom,
+        qty: num(l.qty), rate: num(l.rate), with_gst: l.with_gst ? num(l.with_gst) : undefined,
+      })),
+    };
     startTransition(async () => {
-      const res = await createPurchase({
-        vendor_id: vendorId,
-        branch_id: branchId,
-        payment_mode: paymentMode as "petty_cash" | "credit",
-        bill_no: billNo,
-        bill_date: billDate,
-        items: lines.map((l) => ({
-          ingredient_id: l.ingredient_id, category: l.category, uom: l.uom,
-          qty: num(l.qty), rate: num(l.rate), with_gst: l.with_gst ? num(l.with_gst) : undefined,
-        })),
-      });
+      const res = mode === "edit" && purchaseId
+        ? await updatePurchase(purchaseId, payload)
+        : await createPurchase(payload);
       if (res?.error) setError(res.error);
       else router.push("/purchases");
     });
@@ -160,7 +169,7 @@ export function PurchaseForm({ vendors, ingredients, branches, defaultBranchId }
           Without GST <span className="font-medium text-foreground">{inr(totalWithout)}</span> · GST <span className="font-medium text-foreground">{inr(totalGst)}</span> · With GST <span className="font-semibold text-foreground">{inr(totalWith)}</span>
           <div className="text-xs">Category, UOM, GST &amp; price auto-fill from the Item master when you pick a product.</div>
         </div>
-        <Button onClick={submit} disabled={pending} className="sm:w-44">{pending ? "Saving…" : "Save Purchase"}</Button>
+        <Button onClick={submit} disabled={pending} className="sm:w-44">{pending ? "Saving…" : mode === "edit" ? "Save changes" : "Save Purchase"}</Button>
       </div>
       {error && <p className="text-sm text-destructive">{error}</p>}
     </CardContent></Card>

@@ -10,7 +10,7 @@ export type PurchaseFilters = {
 };
 
 export type PurchaseRow = {
-  id: string; payment_mode: string | null; vendor: string; location: string;
+  id: string; purchase_id: string; payment_mode: string | null; vendor: string; location: string;
   bill_no: string; bill_date: string; category: string; product: string;
   uom: string; qty: number; rate: number; without_gst: number; with_gst: number;
 };
@@ -25,7 +25,7 @@ export async function getPurchaseRegister(
     .select(`
       id, qty, rate, uom, category, line_total,
       ingredients(name),
-      purchases!inner(bill_no, bill_date, payment_mode, org_id, branch_id, vendors(name), branches(name))
+      purchases!inner(id, bill_no, bill_date, payment_mode, org_id, branch_id, vendors(name), branches(name))
     `)
     .eq("purchases.org_id", orgId)
     .limit(5000);
@@ -39,6 +39,7 @@ export async function getPurchaseRegister(
     const rate = Number(r.rate) || 0;
     return {
       id: r.id,
+      purchase_id: r.purchases?.id ?? "",
       payment_mode: r.purchases?.payment_mode ?? null,
       vendor: r.purchases?.vendors?.name ?? "—",
       location: r.purchases?.branches?.name ?? "—",
@@ -130,6 +131,41 @@ export async function getPurchaseFormData(orgId: string) {
   }));
 
   return { vendors: vendors ?? [], branches: branches ?? [], ingredients };
+}
+
+export type PurchaseEditData = {
+  id: string; vendor_id: string; branch_id: string; payment_mode: string;
+  bill_no: string; bill_date: string;
+  lines: { ingredient_id: string; category: string; uom: string; qty: string; rate: string; with_gst: string }[];
+};
+
+export async function getPurchaseForEdit(orgId: string, id: string): Promise<PurchaseEditData | null> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("purchases")
+    .select(`
+      id, vendor_id, branch_id, payment_mode, bill_no, bill_date,
+      purchase_items(ingredient_id, category, uom, qty, rate, line_total)
+    `)
+    .eq("id", id).eq("org_id", orgId).single();
+  if (!data) return null;
+  const p: any = data;
+  return {
+    id: p.id,
+    vendor_id: p.vendor_id ?? "",
+    branch_id: p.branch_id ?? "",
+    payment_mode: p.payment_mode ?? "credit",
+    bill_no: p.bill_no ?? "",
+    bill_date: (p.bill_date ?? new Date().toISOString().slice(0, 10)) as string,
+    lines: (p.purchase_items ?? []).map((it: any) => ({
+      ingredient_id: it.ingredient_id ?? "",
+      category: it.category ?? "",
+      uom: it.uom ?? "",
+      qty: String(it.qty ?? ""),
+      rate: String(it.rate ?? ""),
+      with_gst: it.line_total != null ? String(it.line_total) : "",
+    })),
+  };
 }
 
 export async function getPurchaseReadiness(orgId: string) {

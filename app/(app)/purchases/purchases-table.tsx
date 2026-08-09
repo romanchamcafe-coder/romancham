@@ -1,10 +1,14 @@
 "use client";
-import { useState } from "react";
+import { useState, useTransition } from "react";
+import Link from "next/link";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { toast } from "@/lib/toast";
+import { deletePurchase } from "@/server/actions/purchases";
 import { inr } from "@/lib/utils";
-import { ChevronUp, ChevronDown, Columns3, MoveHorizontal } from "lucide-react";
+import { ChevronUp, ChevronDown, Columns3, MoveHorizontal, Pencil, Trash2 } from "lucide-react";
 import type { PurchaseRow } from "@/server/queries/purchases";
 
 type Col = { key: keyof PurchaseRow; label: string; numeric?: boolean };
@@ -30,8 +34,18 @@ export function PurchasesTable({ rows, sort, dir }: { rows: PurchaseRow[]; sort?
   const sp = useSearchParams();
   const [hidden, setHidden] = useState<Set<string>>(new Set());
   const [showCols, setShowCols] = useState(false);
+  const [pending, start] = useTransition();
+  const [confirm, setConfirm] = useState<{ id: string; label: string } | null>(null);
 
   const visible = COLS.filter((c) => !hidden.has(c.key));
+
+  const del = (purchaseId: string) => {
+    start(async () => {
+      const res = await deletePurchase(purchaseId);
+      if (res?.error) toast(res.error, "error");
+      else { toast("Purchase deleted"); setConfirm(null); router.refresh(); }
+    });
+  };
 
   const sortBy = (key: string) => {
     const params = new URLSearchParams(sp.toString());
@@ -85,6 +99,7 @@ export function PurchasesTable({ rows, sort, dir }: { rows: PurchaseRow[]; sort?
                   </span>
                 </th>
               ))}
+              <th className="px-3 py-2 text-right font-medium">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -95,14 +110,38 @@ export function PurchasesTable({ rows, sort, dir }: { rows: PurchaseRow[]; sort?
                     {cell(c, r)}
                   </td>
                 ))}
+                <td className="px-3 py-2 text-right">
+                  <div className="flex justify-end gap-1">
+                    <Link href={`/purchases/${r.purchase_id}/edit`} aria-label={`Edit bill ${r.bill_no}`}
+                      className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground">
+                      <Pencil className="h-4 w-4" />
+                    </Link>
+                    <button onClick={() => setConfirm({ id: r.purchase_id, label: `${r.product} · ${r.bill_no}` })}
+                      aria-label={`Delete bill ${r.bill_no}`}
+                      className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-destructive">
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                </td>
               </tr>
             ))}
             {rows.length === 0 && (
-              <tr><td colSpan={visible.length} className="px-3 py-8 text-center text-muted-foreground">No purchases match these filters.</td></tr>
+              <tr><td colSpan={visible.length + 1} className="px-3 py-8 text-center text-muted-foreground">No purchases match these filters.</td></tr>
             )}
           </tbody>
         </table>
       </Card>
+
+      <ConfirmDialog
+        open={!!confirm}
+        title="Delete this purchase bill?"
+        description="This removes the whole bill (all its line items) and reverses the stock it added. If any of that stock has already been used, the delete will be blocked. This cannot be undone."
+        confirmLabel="Delete bill"
+        destructive
+        busy={pending}
+        onConfirm={() => confirm && del(confirm.id)}
+        onCancel={() => setConfirm(null)}
+      />
     </div>
   );
 }
