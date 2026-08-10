@@ -11,22 +11,32 @@ import { inr } from "@/lib/utils";
 import { ChevronUp, ChevronDown, Columns3, MoveHorizontal, Pencil, Trash2 } from "lucide-react";
 import type { PurchaseRow } from "@/server/queries/purchases";
 
-type Col = { key: keyof PurchaseRow; label: string; numeric?: boolean };
+type ColKind = "badge" | "money" | "num" | "qty" | "packsize";
+type Col = { key: string; label: string; numeric?: boolean; kind?: ColKind };
 const COLS: Col[] = [
-  { key: "payment_mode", label: "Petty cash/Credit" },
+  { key: "payment_mode", label: "Petty cash/Credit", kind: "badge" },
   { key: "vendor", label: "Vendor" },
   { key: "location", label: "Location" },
   { key: "bill_no", label: "Invoice No" },
   { key: "bill_date", label: "Bill Date" },
   { key: "category", label: "Category" },
   { key: "product", label: "Product" },
-  { key: "uom", label: "UOM" },
-  { key: "qty", label: "Qty", numeric: true },
-  { key: "rate", label: "Per pcs", numeric: true },
-  { key: "without_gst", label: "Without GST", numeric: true },
-  { key: "with_gst", label: "With GST", numeric: true },
+  { key: "purchase_uom", label: "Packaging" },
+  { key: "pack_qty", label: "Purchase Qty", numeric: true, kind: "num" },
+  { key: "pack_size", label: "Pack Size", kind: "packsize" },
+  { key: "total_qty", label: "Total Qty", numeric: true, kind: "qty" },
+  { key: "unit_price", label: "Unit Price", numeric: true, kind: "money" },
+  { key: "without_gst", label: "Without GST", numeric: true, kind: "money" },
+  { key: "with_gst", label: "With GST", numeric: true, kind: "money" },
 ];
 const modeLabel = (m: string | null) => (m === "petty_cash" ? "Petty Cash" : m === "credit" ? "Credit" : "—");
+const trim = (n: number) => (Math.round(n * 10000) / 10000).toString();
+function fmtQty(base: number, abbr: string) {
+  const a = (abbr || "").toLowerCase();
+  if ((a === "g" || a === "gms") && base >= 1000) return `${trim(base / 1000)} kg`;
+  if (a === "ml" && base >= 1000) return `${trim(base / 1000)} L`;
+  return `${trim(base)} ${abbr}`.trim();
+}
 
 export function PurchasesTable({ rows, sort, dir }: { rows: PurchaseRow[]; sort?: string; dir?: string }) {
   const router = useRouter();
@@ -56,9 +66,14 @@ export function PurchasesTable({ rows, sort, dir }: { rows: PurchaseRow[]; sort?
   const toggleCol = (k: string) => setHidden((s) => { const n = new Set(s); n.has(k) ? n.delete(k) : n.add(k); return n; });
 
   const cell = (c: Col, r: PurchaseRow) => {
-    if (c.key === "payment_mode") return <Badge tone={r.payment_mode === "petty_cash" ? "green" : "amber"}>{modeLabel(r.payment_mode)}</Badge>;
-    if (c.numeric) return c.key === "qty" ? r.qty : inr(r[c.key] as number);
-    return r[c.key] as string;
+    switch (c.kind) {
+      case "badge": return <Badge tone={r.payment_mode === "petty_cash" ? "green" : "amber"}>{modeLabel(r.payment_mode)}</Badge>;
+      case "money": { const v = (r as any)[c.key]; return v == null ? "—" : inr(v as number); }
+      case "num": { const v = (r as any)[c.key]; return v == null ? "—" : trim(v as number); }
+      case "qty": return fmtQty(r.total_qty, r.base_uom);
+      case "packsize": return r.pack_size != null ? `${trim(r.pack_size)} ${r.pack_unit}`.trim() : "—";
+      default: return ((r as any)[c.key] as string) ?? "—";
+    }
   };
 
   return (

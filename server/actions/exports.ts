@@ -23,8 +23,10 @@ const SALES_COLS: [string, string][] = [
 
 const PURCHASE_COLS: [string, string][] = [
   ["payment_mode", "Petty cash/Credit"], ["vendor", "Vendor"], ["location", "Location"], ["bill_no", "Invoice No"],
-  ["bill_date", "Bill Date"], ["category", "Category"], ["product", "Product"], ["uom", "UOM"],
-  ["qty", "Qty"], ["rate", "Per pcs"], ["without_gst", "Without GST"], ["with_gst", "With GST"],
+  ["bill_date", "Bill Date"], ["category", "Category"], ["product", "Product"],
+  ["purchase_uom", "Packaging"], ["pack_qty", "Purchase Qty"], ["pack_size", "Pack Size"], ["pack_unit", "Pack Unit"],
+  ["total_qty", "Total Qty"], ["base_uom", "Base UOM"], ["unit_price", "Unit Price"],
+  ["without_gst", "Without GST"], ["with_gst", "With GST"],
 ];
 
 function toCsv(cols: [string, string][], rows: any[]) {

@@ -11,7 +11,7 @@ export const metadata: Metadata = pageMetadata({ title: "New Purchase", descript
 
 export default async function NewPurchasePage() {
   const ctx = await getActiveContext();
-  const { vendors, ingredients, branches } = await getPurchaseFormData(ctx!.orgId!);
+  const { vendors, ingredients, branches, units } = await getPurchaseFormData(ctx!.orgId!);
 
   if (vendors.length === 0 || ingredients.length === 0) {
     return (
@@ -35,7 +35,7 @@ export default async function NewPurchasePage() {
   return (
     <div className="space-y-4">
       <h1 className="text-xl font-semibold">New Purchase</h1>
-      <PurchaseForm vendors={vendors} ingredients={ingredients} branches={branches} defaultBranchId={ctx!.branch?.id ?? ""} />
+      <PurchaseForm vendors={vendors} ingredients={ingredients} branches={branches} units={units} defaultBranchId={ctx!.branch?.id ?? ""} />
     </div>
   );
 }

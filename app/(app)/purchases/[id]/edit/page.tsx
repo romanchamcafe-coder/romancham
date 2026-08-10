@@ -13,7 +13,7 @@ export const metadata: Metadata = pageMetadata({ title: "Edit Purchase", descrip
 export default async function EditPurchasePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const ctx = await getActiveContext();
-  const [{ vendors, ingredients, branches }, purchase] = await Promise.all([
+  const [{ vendors, ingredients, branches, units }, purchase] = await Promise.all([
     getPurchaseFormData(ctx!.orgId!),
     getPurchaseForEdit(ctx!.orgId!, id),
   ]);
@@ -32,6 +32,7 @@ export default async function EditPurchasePage({ params }: { params: Promise<{ i
         vendors={vendors}
         ingredients={ingredients}
         branches={branches}
+        units={units}
         defaultBranchId={ctx!.branch?.id ?? ""}
         mode="edit"
         purchaseId={purchase.id}
@@ -41,7 +42,7 @@ export default async function EditPurchasePage({ params }: { params: Promise<{ i
           payment_mode: purchase.payment_mode,
           bill_no: purchase.bill_no,
           bill_date: purchase.bill_date,
-          lines: purchase.lines,
+          lines: purchase.lines.map((l) => ({ ...l })),
         }}
       />
     </div>

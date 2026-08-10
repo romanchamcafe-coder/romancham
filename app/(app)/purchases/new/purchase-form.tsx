@@ -2,6 +2,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { createPurchase, updatePurchase } from "@/server/actions/purchases";
+import type { FormIngredient, FormUnit } from "@/server/queries/purchases";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,22 +12,42 @@ import { Trash2 } from "lucide-react";
 
 type Vendor = { id: string; name: string };
 type Branch = { id: string; name: string };
-type Ingredient = {
-  id: string; name: string; default_gst_rate: number; default_vendor_id: string;
-  category_name: string; uom: string; last_price: number;
+type Line = {
+  category: string; ingredient_id: string; purchase_uom: string;
+  pack_qty: string; pack_size: string; pack_size_unit_id: string; unit_price: string; gst_rate: string;
 };
-type Line = { category: string; ingredient_id: string; uom: string; qty: string; rate: string; with_gst: string };
 
-const blank: Line = { category: "", ingredient_id: "", uom: "", qty: "1", rate: "", with_gst: "" };
+const blank: Line = {
+  category: "", ingredient_id: "", purchase_uom: "", pack_qty: "1", pack_size: "", pack_size_unit_id: "", unit_price: "", gst_rate: "",
+};
 const fieldCls = "h-9 w-full rounded-md border border-input bg-background px-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary";
+const PACKAGING = ["Packet", "Bottle", "Bag", "Tin", "Can", "Box", "Tray", "Jar", "Pouch", "Sachet", "Carton", "Piece"];
+const MEAS = new Set(["g", "gms", "kg", "ml", "l", "lts", "ltr", "qty", "pcs", "pc", "dz"]);
 
-type EditInitial = {
+const num = (v: string) => Number(v) || 0;
+
+// Mirror of SQL to_base_qty: convert a pack-size value into the product's base unit.
+function toBase(value: number, fromFactor: number, baseFactor: number, sameUnit: boolean) {
+  if (sameUnit || !fromFactor || !baseFactor) return value;
+  return (value * fromFactor) / baseFactor;
+}
+
+// Human-friendly base quantity, e.g. 1500 g -> "1.5 kg", 1000 ml -> "1 L".
+function fmtQty(base: number, baseAbbr: string) {
+  const a = (baseAbbr || "").toLowerCase();
+  if ((a === "g" || a === "gms") && base >= 1000) return `${trim(base / 1000)} kg`;
+  if (a === "ml" && base >= 1000) return `${trim(base / 1000)} L`;
+  return `${trim(base)} ${baseAbbr}`.trim();
+}
+const trim = (n: number) => (Math.round(n * 10000) / 10000).toString();
+
+export type EditInitial = {
   vendor_id: string; branch_id: string; payment_mode: string; bill_no: string; bill_date: string;
   lines: Line[];
 };
 
-export function PurchaseForm({ vendors, ingredients, branches, defaultBranchId, mode = "create", purchaseId, initial }: {
-  vendors: Vendor[]; ingredients: Ingredient[]; branches: Branch[]; defaultBranchId: string;
+export function PurchaseForm({ vendors, ingredients, branches, units, defaultBranchId, mode = "create", purchaseId, initial }: {
+  vendors: Vendor[]; ingredients: FormIngredient[]; branches: Branch[]; units: FormUnit[]; defaultBranchId: string;
   mode?: "create" | "edit"; purchaseId?: string; initial?: EditInitial;
 }) {
   const router = useRouter();
@@ -39,37 +60,43 @@ export function PurchaseForm({ vendors, ingredients, branches, defaultBranchId, 
   const [billDate, setBillDate] = useState(initial?.bill_date || new Date().toISOString().slice(0, 10));
   const [lines, setLines] = useState<Line[]>(initial?.lines?.length ? initial.lines.map((l) => ({ ...l })) : [{ ...blank }]);
 
+  const measUnits = units.filter((u) => MEAS.has(u.abbr.toLowerCase()));
+  const packUnitOptions = measUnits.length ? measUnits : units;
+  const unitById = new Map(units.map((u) => [u.id, u]));
+
   const update = (i: number, patch: Partial<Line>) =>
     setLines((ls) => ls.map((l, idx) => (idx === i ? { ...l, ...patch } : l)));
-  const num = (v: string) => Number(v) || 0;
-  const withoutGst = (l: Line) => num(l.qty) * num(l.rate);
 
   function onProduct(i: number, id: string) {
     const ing = ingredients.find((x) => x.id === id);
-    setLines((ls) => ls.map((l, idx) => {
-      if (idx !== i) return l;
-      const rate = ing && ing.last_price ? String(ing.last_price) : l.rate;
-      const base = num(l.qty) * num(rate);
-      const withGst = ing && ing.default_gst_rate ? (base * (1 + ing.default_gst_rate / 100)).toFixed(2) : l.with_gst;
-      return { ...l, ingredient_id: id, category: ing?.category_name || l.category, uom: ing?.uom || l.uom, rate, with_gst: withGst };
-    }));
+    update(i, {
+      ingredient_id: id,
+      category: ing?.category_name || lines[i].category,
+      pack_size_unit_id: lines[i].pack_size_unit_id || ing?.base_unit_id || "",
+      gst_rate: lines[i].gst_rate || (ing?.default_gst_rate ? String(ing.default_gst_rate) : ""),
+    });
     if (ing?.default_vendor_id && !vendorId) setVendorId(ing.default_vendor_id);
   }
 
-  function recalcWith(i: number, patch: Partial<Line>) {
-    setLines((ls) => ls.map((l, idx) => {
-      if (idx !== i) return l;
-      const merged = { ...l, ...patch };
-      const ing = ingredients.find((x) => x.id === merged.ingredient_id);
-      const base = num(merged.qty) * num(merged.rate);
-      if (ing && ing.default_gst_rate && base > 0) merged.with_gst = (base * (1 + ing.default_gst_rate / 100)).toFixed(2);
-      return merged;
-    }));
+  // Per-line derived figures.
+  function calc(l: Line) {
+    const ing = ingredients.find((x) => x.id === l.ingredient_id);
+    const packUnit = unitById.get(l.pack_size_unit_id);
+    const baseAbbr = ing?.base_uom || packUnit?.abbr || "";
+    const baseFactor = ing?.base_factor || 1;
+    const sameUnit = !l.pack_size_unit_id || l.pack_size_unit_id === ing?.base_unit_id;
+    const packBase = toBase(num(l.pack_size), packUnit?.factor_to_base || 1, baseFactor, sameUnit);
+    const totalQty = num(l.pack_qty) * packBase;
+    const subtotal = num(l.pack_qty) * num(l.unit_price);
+    const gst = subtotal * num(l.gst_rate) / 100;
+    return { baseAbbr, totalQty, subtotal, gst, grand: subtotal + gst };
   }
 
-  const totalWithout = lines.reduce((s, l) => s + withoutGst(l), 0);
-  const totalWith = lines.reduce((s, l) => s + (num(l.with_gst) || withoutGst(l)), 0);
-  const totalGst = totalWith - totalWithout;
+  const totals = lines.reduce((acc, l) => {
+    const c = calc(l);
+    acc.sub += c.subtotal; acc.gst += c.gst; acc.grand += c.grand;
+    return acc;
+  }, { sub: 0, gst: 0, grand: 0 });
 
   function submit() {
     setError(null);
@@ -79,10 +106,20 @@ export function PurchaseForm({ vendors, ingredients, branches, defaultBranchId, 
       payment_mode: paymentMode as "petty_cash" | "credit",
       bill_no: billNo,
       bill_date: billDate,
-      items: lines.map((l) => ({
-        ingredient_id: l.ingredient_id, category: l.category, uom: l.uom,
-        qty: num(l.qty), rate: num(l.rate), with_gst: l.with_gst ? num(l.with_gst) : undefined,
-      })),
+      items: lines.map((l) => {
+        const ing = ingredients.find((x) => x.id === l.ingredient_id);
+        return {
+          ingredient_id: l.ingredient_id,
+          category: l.category,
+          purchase_uom: l.purchase_uom,
+          pack_qty: num(l.pack_qty),
+          pack_size: num(l.pack_size),
+          pack_size_unit_id: l.pack_size_unit_id || ing?.base_unit_id || "",
+          unit_price: num(l.unit_price),
+          gst_rate: num(l.gst_rate),
+          uom: ing?.base_uom || "",
+        };
+      }),
     };
     startTransition(async () => {
       const res = mode === "edit" && purchaseId
@@ -119,44 +156,66 @@ export function PurchaseForm({ vendors, ingredients, branches, defaultBranchId, 
         <div className="space-y-1.5"><Label>Bill Date</Label><Input className="h-9" type="date" value={billDate} onChange={(e) => setBillDate(e.target.value)} aria-label="Bill date" /></div>
       </div>
 
+      <datalist id="packaging-options">
+        {PACKAGING.map((p) => <option key={p} value={p} />)}
+      </datalist>
+
       <div className="overflow-x-auto rounded-lg border">
         <table className="w-full whitespace-nowrap text-sm">
           <thead className="border-b bg-muted/50 text-left">
             <tr>
-              <th className="px-2 py-2 font-medium">Category</th>
               <th className="px-2 py-2 font-medium">Product</th>
-              <th className="px-2 py-2 font-medium">UOM</th>
-              <th className="px-2 py-2 font-medium">Qty</th>
-              <th className="px-2 py-2 font-medium">Per pcs</th>
+              <th className="px-2 py-2 font-medium">Packaging</th>
+              <th className="px-2 py-2 font-medium">Pack Size</th>
+              <th className="px-2 py-2 font-medium">Purchase Qty</th>
+              <th className="px-2 py-2 font-medium">Unit Price</th>
+              <th className="px-2 py-2 font-medium">GST %</th>
+              <th className="px-2 py-2 font-medium">Total Qty</th>
               <th className="px-2 py-2 text-right font-medium">Without GST</th>
-              <th className="px-2 py-2 font-medium">With GST</th>
+              <th className="px-2 py-2 text-right font-medium">With GST</th>
               <th className="w-8"></th>
             </tr>
           </thead>
           <tbody>
-            {lines.map((l, i) => (
-              <tr key={i} className="border-b last:border-0">
-                <td className="p-1.5"><Input className="h-9 w-28" value={l.category} onChange={(e) => update(i, { category: e.target.value })} placeholder="auto" aria-label="Line category" /></td>
-                <td className="p-1.5">
-                  <select value={l.ingredient_id} onChange={(e) => onProduct(i, e.target.value)} className={fieldCls + " min-w-44"} aria-label="Product">
-                    <option value="">Select…</option>
-                    {ingredients.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
-                  </select>
-                </td>
-                <td className="p-1.5"><Input className="h-9 w-20" value={l.uom} onChange={(e) => update(i, { uom: e.target.value })} placeholder="auto" aria-label="Unit of measure" /></td>
-                <td className="p-1.5"><Input className="h-9 w-20" type="number" step="0.0001" value={l.qty} onChange={(e) => recalcWith(i, { qty: e.target.value })} aria-label="Quantity" /></td>
-                <td className="p-1.5"><Input className="h-9 w-24" type="number" step="0.01" value={l.rate} onChange={(e) => recalcWith(i, { rate: e.target.value })} aria-label="Rate per unit" /></td>
-                <td className="p-1.5 text-right tabular-nums">{inr(withoutGst(l))}</td>
-                <td className="p-1.5"><Input className="h-9 w-28" type="number" step="0.01" value={l.with_gst} onChange={(e) => update(i, { with_gst: e.target.value })} placeholder="incl. GST" aria-label="Amount including GST" /></td>
-                <td className="p-1.5 text-center">
-                  {lines.length > 1 && (
-                    <button type="button" onClick={() => setLines((ls) => ls.filter((_, idx) => idx !== i))} className="text-muted-foreground hover:text-destructive">
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  )}
-                </td>
-              </tr>
-            ))}
+            {lines.map((l, i) => {
+              const c = calc(l);
+              return (
+                <tr key={i} className="border-b last:border-0 align-top">
+                  <td className="p-1.5">
+                    <select value={l.ingredient_id} onChange={(e) => onProduct(i, e.target.value)} className={fieldCls + " min-w-44"} aria-label="Product">
+                      <option value="">Select…</option>
+                      {ingredients.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
+                    </select>
+                    {l.category && <div className="mt-1 px-1 text-xs text-muted-foreground">{l.category}</div>}
+                  </td>
+                  <td className="p-1.5">
+                    <Input list="packaging-options" className="h-9 w-28" value={l.purchase_uom} onChange={(e) => update(i, { purchase_uom: e.target.value })} placeholder="Packet" aria-label="Packaging" />
+                  </td>
+                  <td className="p-1.5">
+                    <div className="flex gap-1">
+                      <Input className="h-9 w-16" type="number" step="0.0001" min="0" value={l.pack_size} onChange={(e) => update(i, { pack_size: e.target.value })} placeholder="500" aria-label="Pack size value" />
+                      <select value={l.pack_size_unit_id} onChange={(e) => update(i, { pack_size_unit_id: e.target.value })} className={fieldCls + " w-20"} aria-label="Pack size unit">
+                        <option value="">unit</option>
+                        {packUnitOptions.map((u) => <option key={u.id} value={u.id}>{u.abbr}</option>)}
+                      </select>
+                    </div>
+                  </td>
+                  <td className="p-1.5"><Input className="h-9 w-20" type="number" step="0.0001" min="0" value={l.pack_qty} onChange={(e) => update(i, { pack_qty: e.target.value })} aria-label="Purchase quantity (packages)" /></td>
+                  <td className="p-1.5"><Input className="h-9 w-24" type="number" step="0.01" min="0" value={l.unit_price} onChange={(e) => update(i, { unit_price: e.target.value })} placeholder="₹ / pack" aria-label="Unit price per package" /></td>
+                  <td className="p-1.5"><Input className="h-9 w-16" type="number" step="0.01" min="0" value={l.gst_rate} onChange={(e) => update(i, { gst_rate: e.target.value })} placeholder="5" aria-label="GST percent" /></td>
+                  <td className="p-1.5 text-sm font-medium tabular-nums">{l.ingredient_id && num(l.pack_qty) > 0 && num(l.pack_size) > 0 ? fmtQty(c.totalQty, c.baseAbbr) : "—"}</td>
+                  <td className="p-1.5 text-right tabular-nums">{inr(c.subtotal)}</td>
+                  <td className="p-1.5 text-right tabular-nums">{inr(c.grand)}</td>
+                  <td className="p-1.5 text-center">
+                    {lines.length > 1 && (
+                      <button type="button" onClick={() => setLines((ls) => ls.filter((_, idx) => idx !== i))} className="text-muted-foreground hover:text-destructive" aria-label="Remove row">
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
         <div className="p-2">
@@ -166,8 +225,8 @@ export function PurchaseForm({ vendors, ingredients, branches, defaultBranchId, 
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="text-sm text-muted-foreground">
-          Without GST <span className="font-medium text-foreground">{inr(totalWithout)}</span> · GST <span className="font-medium text-foreground">{inr(totalGst)}</span> · With GST <span className="font-semibold text-foreground">{inr(totalWith)}</span>
-          <div className="text-xs">Category, UOM, GST &amp; price auto-fill from the Item master when you pick a product.</div>
+          Subtotal <span className="font-medium text-foreground">{inr(totals.sub)}</span> · GST <span className="font-medium text-foreground">{inr(totals.gst)}</span> · Grand Total <span className="font-semibold text-foreground">{inr(totals.grand)}</span>
+          <div className="text-xs">Enter the number of packages and the price per package — the system works out the total quantity and inventory.</div>
         </div>
         <Button onClick={submit} disabled={pending} className="sm:w-44">{pending ? "Saving…" : mode === "edit" ? "Save changes" : "Save Purchase"}</Button>
       </div>
