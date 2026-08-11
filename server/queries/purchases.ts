@@ -158,7 +158,9 @@ export async function getPurchaseFormData(orgId: string) {
     id: u.id, name: u.name, abbr: u.abbr, factor_to_base: Number(u.factor_to_base) || 1,
   }));
 
-  return { vendors: vendors ?? [], branches: branches ?? [], ingredients, units: formUnits };
+  const categoryNames = [...new Set((cats ?? []).map((c: any) => c.name).filter(Boolean))] as string[];
+
+  return { vendors: vendors ?? [], branches: branches ?? [], ingredients, units: formUnits, categories: categoryNames };
 }
 
 export type PurchaseEditLine = {

@@ -46,8 +46,8 @@ export type EditInitial = {
   lines: Line[];
 };
 
-export function PurchaseForm({ vendors, ingredients, branches, units, defaultBranchId, mode = "create", purchaseId, initial }: {
-  vendors: Vendor[]; ingredients: FormIngredient[]; branches: Branch[]; units: FormUnit[]; defaultBranchId: string;
+export function PurchaseForm({ vendors, ingredients, branches, units, categories = [], defaultBranchId, mode = "create", purchaseId, initial }: {
+  vendors: Vendor[]; ingredients: FormIngredient[]; branches: Branch[]; units: FormUnit[]; categories?: string[]; defaultBranchId: string;
   mode?: "create" | "edit"; purchaseId?: string; initial?: EditInitial;
 }) {
   const router = useRouter();
@@ -159,12 +159,16 @@ export function PurchaseForm({ vendors, ingredients, branches, units, defaultBra
       <datalist id="packaging-options">
         {PACKAGING.map((p) => <option key={p} value={p} />)}
       </datalist>
+      <datalist id="purchase-categories">
+        {categories.map((c) => <option key={c} value={c} />)}
+      </datalist>
 
       <div className="overflow-x-auto rounded-lg border">
         <table className="w-full whitespace-nowrap text-sm">
           <thead className="border-b bg-muted/50 text-left">
             <tr>
               <th className="px-2 py-2 font-medium">Product</th>
+              <th className="px-2 py-2 font-medium">Category</th>
               <th className="px-2 py-2 font-medium">Packaging</th>
               <th className="px-2 py-2 font-medium">Pack Size</th>
               <th className="px-2 py-2 font-medium">Purchase Qty</th>
@@ -186,7 +190,9 @@ export function PurchaseForm({ vendors, ingredients, branches, units, defaultBra
                       <option value="">Select…</option>
                       {ingredients.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
                     </select>
-                    {l.category && <div className="mt-1 px-1 text-xs text-muted-foreground">{l.category}</div>}
+                  </td>
+                  <td className="p-1.5">
+                    <Input list="purchase-categories" className="h-9 w-32" value={l.category} onChange={(e) => update(i, { category: e.target.value })} placeholder="auto" aria-label="Category" />
                   </td>
                   <td className="p-1.5">
                     <Input list="packaging-options" className="h-9 w-28" value={l.purchase_uom} onChange={(e) => update(i, { purchase_uom: e.target.value })} placeholder="Packet" aria-label="Packaging" />
