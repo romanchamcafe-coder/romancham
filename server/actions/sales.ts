@@ -102,6 +102,55 @@ export async function createManualSale(input: ManualSaleInput): Promise<ActionSt
   return { ok: true };
 }
 
+export type ManualSaleLine = {
+  item_name: string; category?: string; qty?: string; price?: string; final_total?: string;
+};
+export type ManualSaleBill = {
+  sale_date: string; invoice_no?: string; payment_type?: string; location?: string;
+  lines: ManualSaleLine[];
+};
+
+// Add several line items under ONE invoice/date/payment in a single save.
+export async function createManualSaleBill(bill: ManualSaleBill): Promise<ActionState & { added?: number }> {
+  const ctx = await getActiveContext();
+  if (!ctx?.orgId) return { error: "No active organization" };
+  const branchId = ctx.branch?.id;
+  if (!branchId) return { error: "No location/branch selected" };
+
+  const date = (bill.sale_date || "").trim() || new Date().toISOString().slice(0, 10);
+  const lines = (bill.lines || []).filter((l) => (l.item_name || "").trim());
+  if (lines.length === 0) return { error: "Add at least one item" };
+
+  const batch = crypto.randomUUID();
+  const rows: Record<string, any>[] = [];
+  for (const l of lines) {
+    const qty = num(l.qty);
+    const price = num(l.price);
+    let total = num(l.final_total);
+    if (total === null) total = (price ?? 0) * (qty ?? 0); // default to Price × Qty
+    if (total === null || isNaN(total)) return { error: `Enter a valid total for "${l.item_name}"` };
+    rows.push({
+      org_id: ctx.orgId, branch_id: branchId, batch_id: batch,
+      sale_date: date, date_raw: date,
+      item_name: (l.item_name || "").trim(),
+      category: (l.category || "").trim() || null,
+      payment_type: (bill.payment_type || "").trim() || null,
+      invoice_no: (bill.invoice_no || "").trim() || null,
+      location: (bill.location || "").trim() || null,
+      qty, price, final_total: total,
+      status: "Manual",
+    });
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.from("pos_sales").insert(rows);
+  if (error) return { error: error.message };
+
+  revalidatePath("/sales");
+  revalidatePath("/dashboard");
+  return { ok: true, added: rows.length };
+}
+
 export async function updateSale(id: string, input: ManualSaleInput): Promise<ActionState> {
   const ctx = await getActiveContext();
   if (!ctx?.orgId) return { error: "No active organization" };
