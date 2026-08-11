@@ -163,70 +163,67 @@ export function PurchaseForm({ vendors, ingredients, branches, units, categories
         {categories.map((c) => <option key={c} value={c} />)}
       </datalist>
 
-      <div className="overflow-x-auto rounded-lg border">
-        <table className="w-full whitespace-nowrap text-sm">
-          <thead className="border-b bg-muted/50 text-left">
-            <tr>
-              <th className="px-2 py-2 font-medium">Product</th>
-              <th className="px-2 py-2 font-medium">Category</th>
-              <th className="px-2 py-2 font-medium">Packaging</th>
-              <th className="px-2 py-2 font-medium">Pack Size</th>
-              <th className="px-2 py-2 font-medium">Purchase Qty</th>
-              <th className="px-2 py-2 font-medium">Unit Price</th>
-              <th className="px-2 py-2 font-medium">GST %</th>
-              <th className="px-2 py-2 font-medium">Total Qty</th>
-              <th className="px-2 py-2 text-right font-medium">Without GST</th>
-              <th className="px-2 py-2 text-right font-medium">With GST</th>
-              <th className="w-8"></th>
-            </tr>
-          </thead>
-          <tbody>
-            {lines.map((l, i) => {
-              const c = calc(l);
-              return (
-                <tr key={i} className="border-b last:border-0 align-top">
-                  <td className="p-1.5">
-                    <select value={l.ingredient_id} onChange={(e) => onProduct(i, e.target.value)} className={fieldCls + " min-w-44"} aria-label="Product">
-                      <option value="">Select…</option>
-                      {ingredients.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
+      <div className="space-y-3">
+        {lines.map((l, i) => {
+          const c = calc(l);
+          const showTotals = !!l.ingredient_id && num(l.pack_qty) > 0 && num(l.pack_size) > 0;
+          return (
+            <div key={i} className="rounded-lg border p-3">
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-12 sm:items-end">
+                <div className="col-span-2 space-y-1 sm:col-span-3">
+                  <Label className="text-xs">Product</Label>
+                  <select value={l.ingredient_id} onChange={(e) => onProduct(i, e.target.value)} className={fieldCls} aria-label="Product">
+                    <option value="">Select…</option>
+                    {ingredients.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
+                  </select>
+                </div>
+                <div className="space-y-1 sm:col-span-2">
+                  <Label className="text-xs">Category</Label>
+                  <Input list="purchase-categories" className="h-9 w-full" value={l.category} onChange={(e) => update(i, { category: e.target.value })} placeholder="auto" aria-label="Category" />
+                </div>
+                <div className="space-y-1 sm:col-span-2">
+                  <Label className="text-xs">Packaging</Label>
+                  <Input list="packaging-options" className="h-9 w-full" value={l.purchase_uom} onChange={(e) => update(i, { purchase_uom: e.target.value })} placeholder="Packet" aria-label="Packaging" />
+                </div>
+                <div className="col-span-2 space-y-1 sm:col-span-2">
+                  <Label className="text-xs">Pack Size</Label>
+                  <div className="flex gap-1">
+                    <Input className="h-9 w-full" type="number" step="0.0001" min="0" value={l.pack_size} onChange={(e) => update(i, { pack_size: e.target.value })} placeholder="500" aria-label="Pack size value" />
+                    <select value={l.pack_size_unit_id} onChange={(e) => update(i, { pack_size_unit_id: e.target.value })} className={fieldCls + " w-24"} aria-label="Pack size unit">
+                      <option value="">unit</option>
+                      {packUnitOptions.map((u) => <option key={u.id} value={u.id}>{u.abbr}</option>)}
                     </select>
-                  </td>
-                  <td className="p-1.5">
-                    <Input list="purchase-categories" className="h-9 w-32" value={l.category} onChange={(e) => update(i, { category: e.target.value })} placeholder="auto" aria-label="Category" />
-                  </td>
-                  <td className="p-1.5">
-                    <Input list="packaging-options" className="h-9 w-28" value={l.purchase_uom} onChange={(e) => update(i, { purchase_uom: e.target.value })} placeholder="Packet" aria-label="Packaging" />
-                  </td>
-                  <td className="p-1.5">
-                    <div className="flex gap-1">
-                      <Input className="h-9 w-16" type="number" step="0.0001" min="0" value={l.pack_size} onChange={(e) => update(i, { pack_size: e.target.value })} placeholder="500" aria-label="Pack size value" />
-                      <select value={l.pack_size_unit_id} onChange={(e) => update(i, { pack_size_unit_id: e.target.value })} className={fieldCls + " w-20"} aria-label="Pack size unit">
-                        <option value="">unit</option>
-                        {packUnitOptions.map((u) => <option key={u.id} value={u.id}>{u.abbr}</option>)}
-                      </select>
-                    </div>
-                  </td>
-                  <td className="p-1.5"><Input className="h-9 w-20" type="number" step="0.0001" min="0" value={l.pack_qty} onChange={(e) => update(i, { pack_qty: e.target.value })} aria-label="Purchase quantity (packages)" /></td>
-                  <td className="p-1.5"><Input className="h-9 w-24" type="number" step="0.01" min="0" value={l.unit_price} onChange={(e) => update(i, { unit_price: e.target.value })} placeholder="₹ / pack" aria-label="Unit price per package" /></td>
-                  <td className="p-1.5"><Input className="h-9 w-16" type="number" step="0.01" min="0" value={l.gst_rate} onChange={(e) => update(i, { gst_rate: e.target.value })} placeholder="5" aria-label="GST percent" /></td>
-                  <td className="p-1.5 text-sm font-medium tabular-nums">{l.ingredient_id && num(l.pack_qty) > 0 && num(l.pack_size) > 0 ? fmtQty(c.totalQty, c.baseAbbr) : "—"}</td>
-                  <td className="p-1.5 text-right tabular-nums">{inr(c.subtotal)}</td>
-                  <td className="p-1.5 text-right tabular-nums">{inr(c.grand)}</td>
-                  <td className="p-1.5 text-center">
-                    {lines.length > 1 && (
-                      <button type="button" onClick={() => setLines((ls) => ls.filter((_, idx) => idx !== i))} className="text-muted-foreground hover:text-destructive" aria-label="Remove row">
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-        <div className="p-2">
-          <Button variant="outline" size="sm" type="button" onClick={() => setLines((ls) => [...ls, { ...blank }])}>+ Add row</Button>
-        </div>
+                  </div>
+                </div>
+                <div className="space-y-1 sm:col-span-1">
+                  <Label className="text-xs">Purchase Qty</Label>
+                  <Input className="h-9 w-full" type="number" step="0.0001" min="0" value={l.pack_qty} onChange={(e) => update(i, { pack_qty: e.target.value })} aria-label="Purchase quantity (packages)" />
+                </div>
+                <div className="space-y-1 sm:col-span-1">
+                  <Label className="text-xs">Unit Price</Label>
+                  <Input className="h-9 w-full" type="number" step="0.01" min="0" value={l.unit_price} onChange={(e) => update(i, { unit_price: e.target.value })} placeholder="₹/pack" aria-label="Unit price per package" />
+                </div>
+                <div className="space-y-1 sm:col-span-1">
+                  <Label className="text-xs">GST %</Label>
+                  <Input className="h-9 w-full" type="number" step="0.01" min="0" value={l.gst_rate} onChange={(e) => update(i, { gst_rate: e.target.value })} placeholder="5" aria-label="GST percent" />
+                </div>
+              </div>
+              <div className="mt-2 flex flex-wrap items-center justify-between gap-2 border-t pt-2 text-sm">
+                <div className="text-muted-foreground">
+                  Total Qty <span className="font-medium text-foreground">{showTotals ? fmtQty(c.totalQty, c.baseAbbr) : "—"}</span>
+                  {" · "}Without GST <span className="font-medium text-foreground">{inr(c.subtotal)}</span>
+                  {" · "}With GST <span className="font-semibold text-foreground">{inr(c.grand)}</span>
+                </div>
+                {lines.length > 1 && (
+                  <button type="button" onClick={() => setLines((ls) => ls.filter((_, idx) => idx !== i))} className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-destructive" aria-label="Remove row">
+                    <Trash2 className="h-3.5 w-3.5" /> Remove
+                  </button>
+                )}
+              </div>
+            </div>
+          );
+        })}
+        <Button variant="outline" size="sm" type="button" onClick={() => setLines((ls) => [...ls, { ...blank }])}>+ Add row</Button>
       </div>
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

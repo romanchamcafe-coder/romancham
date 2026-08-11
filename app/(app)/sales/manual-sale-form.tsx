@@ -80,43 +80,44 @@ export function ManualSaleForm({ categories = [] }: { categories?: string[] }) {
         {categories.map((c) => <option key={c} value={c} />)}
       </datalist>
 
-      <div className="overflow-x-auto rounded-lg border">
-        <table className="w-full whitespace-nowrap text-sm">
-          <thead className="border-b bg-muted/50 text-left">
-            <tr>
-              <th className="px-2 py-2 font-medium">Item name</th>
-              <th className="px-2 py-2 font-medium">Category</th>
-              <th className="px-2 py-2 font-medium">Qty</th>
-              <th className="px-2 py-2 font-medium">Price</th>
-              <th className="px-2 py-2 font-medium">Final total (₹)</th>
-              <th className="w-8"></th>
-            </tr>
-          </thead>
-          <tbody>
-            {lines.map((l, i) => {
-              const qtyBad = submitted && l.item_name.trim() !== "" && (l.qty === "" || num(l.qty) < 1);
-              return (
-                <tr key={i} className="border-b last:border-0">
-                  <td className="p-1.5"><Input className="h-9 min-w-40" value={l.item_name} onChange={(e) => updateLine(i, { item_name: e.target.value })} placeholder="e.g. Cappuccino" aria-label="Item name" /></td>
-                  <td className="p-1.5"><Input className="h-9 w-32" value={l.category} onChange={(e) => updateLine(i, { category: e.target.value })} placeholder="e.g. Beverages" list="sale-categories" autoComplete="off" aria-label="Category" /></td>
-                  <td className="p-1.5"><Input className="h-9 w-20" type="number" min="1" value={l.qty} onChange={(e) => updateLine(i, { qty: e.target.value })} aria-invalid={qtyBad} aria-label="Quantity" /></td>
-                  <td className="p-1.5"><Input className="h-9 w-24" type="number" step="0.01" min="0" value={l.price} onChange={(e) => updateLine(i, { price: e.target.value })} placeholder="0" aria-label="Price" /></td>
-                  <td className="p-1.5"><Input className="h-9 w-28" type="number" step="0.01" value={l.final_total} onChange={(e) => onFinalTotal(i, e.target.value)} placeholder="0" aria-label="Final total" /></td>
-                  <td className="p-1.5 text-center">
-                    {lines.length > 1 && (
-                      <button type="button" onClick={() => setLines((ls) => ls.filter((_, idx) => idx !== i))} className="text-muted-foreground hover:text-destructive" aria-label="Remove item">
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-        <div className="p-2">
-          <Button variant="outline" size="sm" type="button" onClick={() => setLines((ls) => [...ls, blankLine()])}>+ Add item</Button>
-        </div>
+      <div className="space-y-3">
+        {lines.map((l, i) => {
+          const qtyBad = submitted && l.item_name.trim() !== "" && (l.qty === "" || num(l.qty) < 1);
+          return (
+            <div key={i} className="rounded-lg border p-3">
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-12 sm:items-end">
+                <div className="col-span-2 space-y-1 sm:col-span-4">
+                  <Label className="text-xs">Item name</Label>
+                  <Input className="h-9 w-full" value={l.item_name} onChange={(e) => updateLine(i, { item_name: e.target.value })} placeholder="e.g. Cappuccino" aria-label="Item name" />
+                </div>
+                <div className="col-span-2 space-y-1 sm:col-span-3">
+                  <Label className="text-xs">Category</Label>
+                  <Input className="h-9 w-full" value={l.category} onChange={(e) => updateLine(i, { category: e.target.value })} placeholder="e.g. Beverages" list="sale-categories" autoComplete="off" aria-label="Category" />
+                </div>
+                <div className="space-y-1 sm:col-span-1">
+                  <Label className="text-xs">Qty</Label>
+                  <Input className="h-9 w-full" type="number" min="1" value={l.qty} onChange={(e) => updateLine(i, { qty: e.target.value })} aria-invalid={qtyBad} aria-label="Quantity" />
+                </div>
+                <div className="space-y-1 sm:col-span-2">
+                  <Label className="text-xs">Price</Label>
+                  <Input className="h-9 w-full" type="number" step="0.01" min="0" value={l.price} onChange={(e) => updateLine(i, { price: e.target.value })} placeholder="0" aria-label="Price" />
+                </div>
+                <div className="col-span-2 space-y-1 sm:col-span-2">
+                  <Label className="text-xs">Final total (₹)</Label>
+                  <Input className="h-9 w-full" type="number" step="0.01" value={l.final_total} onChange={(e) => onFinalTotal(i, e.target.value)} placeholder="0" aria-label="Final total" />
+                </div>
+              </div>
+              {lines.length > 1 && (
+                <div className="mt-2 flex justify-end">
+                  <button type="button" onClick={() => setLines((ls) => ls.filter((_, idx) => idx !== i))} className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-destructive" aria-label="Remove item">
+                    <Trash2 className="h-3.5 w-3.5" /> Remove
+                  </button>
+                </div>
+              )}
+            </div>
+          );
+        })}
+        <Button variant="outline" size="sm" type="button" onClick={() => setLines((ls) => [...ls, blankLine()])}>+ Add item</Button>
       </div>
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
