@@ -5,6 +5,7 @@ import { createManualSaleBill } from "@/server/actions/sales";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { SelectOrType } from "@/components/ui/select-or-type";
 import { toast } from "@/lib/toast";
 import { inr } from "@/lib/utils";
 import { Trash2 } from "lucide-react";
@@ -14,7 +15,7 @@ const blankLine = (): Line => ({ item_name: "", category: "", qty: "1", price: "
 const sel = "h-10 w-full rounded-md border border-input bg-background px-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary";
 const num = (v: string) => Number(v) || 0;
 
-export function ManualSaleForm({ categories = [] }: { categories?: string[] }) {
+export function ManualSaleForm({ categories = [], products = [] }: { categories?: string[]; products?: string[] }) {
   const router = useRouter();
   const [pending, start] = useTransition();
   const [saleDate, setSaleDate] = useState(new Date().toISOString().slice(0, 10));
@@ -76,10 +77,6 @@ export function ManualSaleForm({ categories = [] }: { categories?: string[] }) {
         </div>
       </div>
 
-      <datalist id="sale-categories">
-        {categories.map((c) => <option key={c} value={c} />)}
-      </datalist>
-
       <div className="space-y-3">
         {lines.map((l, i) => {
           const qtyBad = submitted && l.item_name.trim() !== "" && (l.qty === "" || num(l.qty) < 1);
@@ -88,11 +85,11 @@ export function ManualSaleForm({ categories = [] }: { categories?: string[] }) {
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-12 sm:items-end">
                 <div className="col-span-2 space-y-1 sm:col-span-4">
                   <Label className="text-xs">Item name</Label>
-                  <Input className="h-9 w-full" value={l.item_name} onChange={(e) => updateLine(i, { item_name: e.target.value })} placeholder="e.g. Cappuccino" aria-label="Item name" />
+                  <SelectOrType value={l.item_name} onChange={(v) => updateLine(i, { item_name: v })} options={products} placeholder="Select item…" ariaLabel="Item name" />
                 </div>
                 <div className="col-span-2 space-y-1 sm:col-span-3">
                   <Label className="text-xs">Category</Label>
-                  <Input className="h-9 w-full" value={l.category} onChange={(e) => updateLine(i, { category: e.target.value })} placeholder="e.g. Beverages" list="sale-categories" autoComplete="off" aria-label="Category" />
+                  <SelectOrType value={l.category} onChange={(v) => updateLine(i, { category: v })} options={categories} placeholder="Select category…" ariaLabel="Category" />
                 </div>
                 <div className="space-y-1 sm:col-span-1">
                   <Label className="text-xs">Qty</Label>

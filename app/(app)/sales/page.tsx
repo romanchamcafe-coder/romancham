@@ -55,7 +55,7 @@ export default async function SalesPage({ searchParams }: { searchParams: Promis
         </summary>
         <div className="border-t p-4">
           <p className="mb-3 text-xs text-muted-foreground">For one-off sales without a POS export. It feeds the same reports as the CSV.</p>
-          <ManualSaleForm categories={meta.categories} />
+          <ManualSaleForm categories={meta.categories} products={meta.products} />
         </div>
       </details>
 

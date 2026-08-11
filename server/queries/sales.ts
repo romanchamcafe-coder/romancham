@@ -32,12 +32,19 @@ export async function getSalesRegister(
 
 export async function getSalesMeta(orgId: string, branchId: string | null) {
   const supabase = await createClient();
-  let q = supabase.from("pos_sales").select("payment_type, category").eq("org_id", orgId).limit(1000);
+  let q = supabase.from("pos_sales").select("payment_type, category, item_name").eq("org_id", orgId).limit(2000);
   if (branchId) q = q.eq("branch_id", branchId);
-  const { data } = await q;
-  const payments = [...new Set((data ?? []).map((r: any) => r.payment_type).filter(Boolean))].sort();
-  const categories = [...new Set((data ?? []).map((r: any) => r.category).filter(Boolean))].sort();
-  return { payments, categories };
+  const [{ data }, { data: ings }] = await Promise.all([
+    q,
+    supabase.from("ingredients").select("name").eq("org_id", orgId).eq("is_active", true)
+      .in("material_type", ["sales", "both"]).order("name"),
+  ]);
+  const payments = [...new Set((data ?? []).map((r: any) => r.payment_type).filter(Boolean))].sort() as string[];
+  const categories = [...new Set((data ?? []).map((r: any) => r.category).filter(Boolean))].sort() as string[];
+  const soldNames = (data ?? []).map((r: any) => r.item_name).filter(Boolean);
+  const masterNames = (ings ?? []).map((i: any) => i.name).filter(Boolean);
+  const products = [...new Set([...masterNames, ...soldNames])].sort() as string[];
+  return { payments, categories, products };
 }
 
 export async function getSalesImports(orgId: string, branchId: string | null, limit = 8) {

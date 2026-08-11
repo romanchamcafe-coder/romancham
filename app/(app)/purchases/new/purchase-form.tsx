@@ -7,6 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { SelectOrType } from "@/components/ui/select-or-type";
 import { inr } from "@/lib/utils";
 import { Trash2 } from "lucide-react";
 
@@ -156,13 +157,6 @@ export function PurchaseForm({ vendors, ingredients, branches, units, categories
         <div className="space-y-1.5"><Label>Bill Date</Label><Input className="h-9" type="date" value={billDate} onChange={(e) => setBillDate(e.target.value)} aria-label="Bill date" /></div>
       </div>
 
-      <datalist id="packaging-options">
-        {PACKAGING.map((p) => <option key={p} value={p} />)}
-      </datalist>
-      <datalist id="purchase-categories">
-        {categories.map((c) => <option key={c} value={c} />)}
-      </datalist>
-
       <div className="space-y-3">
         {lines.map((l, i) => {
           const c = calc(l);
@@ -179,11 +173,11 @@ export function PurchaseForm({ vendors, ingredients, branches, units, categories
                 </div>
                 <div className="space-y-1 sm:col-span-2">
                   <Label className="text-xs">Category</Label>
-                  <Input list="purchase-categories" className="h-9 w-full" value={l.category} onChange={(e) => update(i, { category: e.target.value })} placeholder="auto" aria-label="Category" />
+                  <SelectOrType value={l.category} onChange={(v) => update(i, { category: v })} options={categories} placeholder="Category" ariaLabel="Category" />
                 </div>
                 <div className="space-y-1 sm:col-span-2">
                   <Label className="text-xs">Packaging</Label>
-                  <Input list="packaging-options" className="h-9 w-full" value={l.purchase_uom} onChange={(e) => update(i, { purchase_uom: e.target.value })} placeholder="Packet" aria-label="Packaging" />
+                  <SelectOrType value={l.purchase_uom} onChange={(v) => update(i, { purchase_uom: v })} options={PACKAGING} placeholder="Packet" ariaLabel="Packaging" />
                 </div>
                 <div className="col-span-2 space-y-1 sm:col-span-2">
                   <Label className="text-xs">Pack Size</Label>
