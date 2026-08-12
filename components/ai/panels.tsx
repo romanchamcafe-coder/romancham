@@ -74,13 +74,13 @@ export function Briefing({ briefing }: { briefing: Intelligence["briefing"] }) {
       <CardContent className="space-y-2 pt-6">
         <p className="text-sm font-semibold">Daily AI Briefing</p>
         <div className="flex flex-wrap gap-4 text-sm">
-          <div><span className="text-muted-foreground">Today's sales </span><span className="font-medium">₹{Math.round(briefing.salesToday).toLocaleString("en-IN")}</span></div>
+          <div><span className="text-muted-foreground">Sales today </span><span className="font-medium">₹{Math.round(briefing.salesToday).toLocaleString("en-IN")}</span></div>
           <div><span className="text-muted-foreground">Food cost </span><span className="font-medium">{Math.round(briefing.foodCostToday * 10) / 10}%</span></div>
         </div>
         {briefing.lines.map((l, i) => <p key={i} className="text-sm">{l}</p>)}
         {briefing.actions.length > 0 && (
           <div>
-            <p className="mt-1 text-xs font-medium text-muted-foreground">Today's recommended actions</p>
+            <p className="mt-1 text-xs font-medium text-muted-foreground">Recommended actions today</p>
             <ol className="ml-4 list-decimal text-sm">{briefing.actions.map((a, i) => <li key={i}>{a}</li>)}</ol>
           </div>
         )}
