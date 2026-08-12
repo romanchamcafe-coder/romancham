@@ -4,6 +4,8 @@ import { deriveAndSync } from "@/server/notifications/derive";
 import { getNotifications } from "@/server/queries/notifications";
 import { getDashboard, getActivityCounts } from "@/server/queries/dashboard";
 import { getAnalytics } from "@/server/queries/analytics";
+import { getIntelligence } from "@/server/ai/analytics";
+import { HealthScore, InsightList, Briefing } from "@/components/ai/panels";
 import { AlertTriangle } from "lucide-react";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,7 +17,7 @@ import { resolveRange, type RangeKey } from "@/lib/date-ranges";
 import type { Metadata } from "next";
 import { pageMetadata } from "@/lib/seo";
 import { inr } from "@/lib/utils";
-import { TrendingUp, LineChart, BarChart3, Package, Info } from "lucide-react";
+import { TrendingUp, LineChart, BarChart3, Package, Info, Sparkles } from "lucide-react";
 
 export const metadata: Metadata = pageMetadata({ title: "Dashboard", description: "Your café at a glance — sales, food cost, top items and today's operational status.", path: "/dashboard" });
 
@@ -63,6 +65,8 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
     getActivityCounts(ctx.orgId, ctx.branch?.id ?? null),
     getAnalytics(ctx.orgId, ctx.branch?.id ?? null),
   ]);
+
+  const intel = await getIntelligence(ctx.orgId, ctx.branch?.id ?? null, r.from, r.to, r.label);
 
   const allZero = m.revenue === 0 && m.purchases === 0 && m.gross_profit === 0 && m.net_profit === 0;
   const zeroBanner = !allZero ? null
@@ -128,6 +132,25 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
           </Card>
         ))}
       </div>
+
+      {/* AI Business Insights */}
+      {!allZero && (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h2 className="flex items-center gap-1.5 text-sm font-semibold text-muted-foreground">
+              <Sparkles className="h-4 w-4 text-primary" aria-hidden /> AI Business Insights
+            </h2>
+            <Link href="/ai" className="text-xs font-medium text-primary hover:underline">Open AI Analyst →</Link>
+          </div>
+          <div className="grid gap-4 lg:grid-cols-3">
+            <HealthScore health={intel.health} />
+            <div className="lg:col-span-2 space-y-3">
+              <InsightList insights={intel.insights} limit={4} />
+            </div>
+          </div>
+          <Briefing briefing={intel.briefing} />
+        </div>
+      )}
 
       {zeroBanner && (
         <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">

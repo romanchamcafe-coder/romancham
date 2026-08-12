@@ -1,9 +1,10 @@
 import {
-  LayoutDashboard, ClipboardCheck, Boxes, Store, Tags, Ruler, ChefHat, Factory, ShoppingCart, IndianRupee, Package, Receipt, Settings, ScrollText, BarChart3, Plug,
+  LayoutDashboard, ClipboardCheck, Boxes, Store, Tags, Ruler, ChefHat, Factory, ShoppingCart, IndianRupee, Package, Receipt, Settings, ScrollText, BarChart3, Plug, Sparkles,
 } from "lucide-react";
 
 export const NAV = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/ai", label: "AI Analyst", icon: Sparkles },
   { href: "/reports", label: "Reports", icon: BarChart3 },
   { href: "/operations", label: "Operations", icon: ClipboardCheck },
   { href: "/sales", label: "Sales", icon: IndianRupee },
