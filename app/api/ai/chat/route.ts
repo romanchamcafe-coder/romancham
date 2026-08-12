@@ -54,31 +54,46 @@ export async function POST(req: Request) {
     "For what-if questions, clearly label the answer as an ESTIMATE/SCENARIO and state your assumptions.",
   ].join(" ");
 
-  const model = process.env.GEMINI_MODEL || "gemini-flash-latest";
+  // Try a list of free-tier models in order. Flash-Lite has the highest free
+  // throughput; if a model is 404 (blocked for new keys) or 503 (high demand),
+  // we fall through to the next one. An env override is tried first.
+  const models = [
+    process.env.GEMINI_MODEL,
+    "gemini-flash-lite-latest",
+    "gemini-flash-latest",
+    "gemini-2.5-flash-lite",
+  ].filter(Boolean) as string[];
 
-  try {
-    const resp = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
-      {
-        method: "POST",
-        headers: { "content-type": "application/json", "x-goog-api-key": key },
-        body: JSON.stringify({
-          system_instruction: { parts: [{ text: system }] },
-          contents: [{ role: "user", parts: [{ text: `DATA:\n${JSON.stringify(context)}\n\nQUESTION: ${message}` }] }],
-          generationConfig: { temperature: 0.4, maxOutputTokens: 1500 },
-        }),
-      },
-    );
-    if (!resp.ok) {
-      const detail = (await resp.text()).slice(0, 400);
-      return NextResponse.json({ reply: "The AI service returned an error. Please verify GEMINI_API_KEY (and the model name) and try again.", detail });
+  const body = JSON.stringify({
+    system_instruction: { parts: [{ text: system }] },
+    contents: [{ role: "user", parts: [{ text: `DATA:\n${JSON.stringify(context)}\n\nQUESTION: ${message}` }] }],
+    generationConfig: { temperature: 0.4, maxOutputTokens: 1500 },
+  });
+
+  let lastDetail = "";
+  for (const model of models) {
+    try {
+      const resp = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
+        { method: "POST", headers: { "content-type": "application/json", "x-goog-api-key": key }, body },
+      );
+      if (resp.ok) {
+        const data: any = await resp.json();
+        const parts = data?.candidates?.[0]?.content?.parts ?? [];
+        const reply = parts.filter((p: any) => p && p.text && !p.thought).map((p: any) => p.text).join("").trim()
+          || "I don't have enough data to answer this accurately.";
+        return NextResponse.json({ reply });
+      }
+      lastDetail = (await resp.text()).slice(0, 400);
+      // 404 (model unavailable) or 503/429 (busy) -> try the next model.
+      if (![404, 503, 429].includes(resp.status)) break;
+    } catch {
+      lastDetail = "network";
     }
-    const data: any = await resp.json();
-    const parts = data?.candidates?.[0]?.content?.parts ?? [];
-    const reply = parts.filter((p: any) => p && p.text && !p.thought).map((p: any) => p.text).join("").trim()
-      || "I don't have enough data to answer this accurately.";
-    return NextResponse.json({ reply });
-  } catch {
-    return NextResponse.json({ reply: "Couldn't reach the AI service right now. Please try again in a moment." });
   }
+
+  return NextResponse.json({
+    reply: "The AI is busy right now (Google's free model is at capacity). Please try again in a few seconds.",
+    detail: lastDetail,
+  });
 }
