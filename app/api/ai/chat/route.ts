@@ -54,7 +54,7 @@ export async function POST(req: Request) {
     "For what-if questions, clearly label the answer as an ESTIMATE/SCENARIO and state your assumptions.",
   ].join(" ");
 
-  const model = process.env.GEMINI_MODEL || "gemini-2.5-flash";
+  const model = process.env.GEMINI_MODEL || "gemini-flash-latest";
 
   try {
     const resp = await fetch(
@@ -65,7 +65,7 @@ export async function POST(req: Request) {
         body: JSON.stringify({
           system_instruction: { parts: [{ text: system }] },
           contents: [{ role: "user", parts: [{ text: `DATA:\n${JSON.stringify(context)}\n\nQUESTION: ${message}` }] }],
-          generationConfig: { temperature: 0.4, maxOutputTokens: 1200, thinkingConfig: { thinkingBudget: 0 } },
+          generationConfig: { temperature: 0.4, maxOutputTokens: 1500 },
         }),
       },
     );
