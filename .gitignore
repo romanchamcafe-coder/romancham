@@ -9,3 +9,5 @@ supabase/.branches
 supabase/.temp
 *.bat
 deploy_result.txt
+gemini_log.txt
+gemini_ran.txt
