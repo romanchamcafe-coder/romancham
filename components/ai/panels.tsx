@@ -5,8 +5,10 @@ const dot: Record<Severity, string> = {
   critical: "bg-red-500", high: "bg-orange-500", medium: "bg-amber-400", positive: "bg-emerald-500",
 };
 const ring: Record<Severity, string> = {
-  critical: "border-red-200 bg-red-50", high: "border-orange-200 bg-orange-50",
-  medium: "border-amber-200 bg-amber-50/60", positive: "border-emerald-200 bg-emerald-50",
+  critical: "border-red-200 bg-red-50 dark:border-red-900/60 dark:bg-red-950/40",
+  high: "border-orange-200 bg-orange-50 dark:border-orange-900/60 dark:bg-orange-950/40",
+  medium: "border-amber-200 bg-amber-50/60 dark:border-amber-900/60 dark:bg-amber-950/40",
+  positive: "border-emerald-200 bg-emerald-50 dark:border-emerald-900/60 dark:bg-emerald-950/40",
 };
 const label: Record<Severity, string> = { critical: "Critical", high: "High", medium: "Attention", positive: "Positive" };
 

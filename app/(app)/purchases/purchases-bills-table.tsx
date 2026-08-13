@@ -95,7 +95,7 @@ export function PurchaseBillsTable({ rows, sort, dir }: { rows: PurchaseBillRow[
                   ) : (
                     <button onClick={() => setPaid(r.purchase_id, "paid")} disabled={pending}
                       aria-label={`Mark bill ${r.bill_no} paid`} title="Mark as paid"
-                      className="inline-flex h-8 items-center justify-center gap-1 rounded-md px-2 text-xs font-medium text-emerald-700 hover:bg-emerald-50 disabled:opacity-50">
+                      className="inline-flex h-8 items-center justify-center gap-1 rounded-md px-2 text-xs font-medium text-emerald-700 hover:bg-emerald-50 disabled:opacity-50 dark:text-emerald-400 dark:hover:bg-emerald-500/10">
                       <Check className="h-4 w-4" /> Paid
                     </button>
                   )}

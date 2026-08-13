@@ -132,7 +132,7 @@ export default async function PurchasesPage({ searchParams }: { searchParams: Pr
           {payTab("Paid", "paid")}
         </div>
         <div className="flex items-center gap-3">
-          <span className={"rounded-md px-3 py-1 text-sm font-medium " + (outstanding > 0 ? "bg-red-50 text-red-700" : "bg-green-50 text-green-700")}>
+          <span className={"rounded-md px-3 py-1 text-sm font-medium " + (outstanding > 0 ? "bg-red-50 text-red-700 dark:bg-red-500/15 dark:text-red-300" : "bg-green-50 text-green-700 dark:bg-green-500/15 dark:text-green-300")}>
             Outstanding payables: {inr(outstanding)}
           </span>
           <ExportButton kind="purchases" filters={filters} filename="romancham-purchases.csv" />

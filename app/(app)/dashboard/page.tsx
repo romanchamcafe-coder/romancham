@@ -102,8 +102,8 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
       </div>
 
       {topAlerts.length > 0 && (
-        <div className="rounded-lg border border-amber-200 bg-amber-50/60 p-3">
-          <div className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-amber-800">
+        <div className="rounded-lg border border-amber-200 bg-amber-50/60 p-3 dark:border-amber-900/60 dark:bg-amber-950/30">
+          <div className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-amber-800 dark:text-amber-200">
             <AlertTriangle className="h-4 w-4" aria-hidden /> Needs attention ({notif.unread})
           </div>
           <div className="grid gap-2 sm:grid-cols-2">
@@ -153,7 +153,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
       )}
 
       {zeroBanner && (
-        <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+        <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-200">
           <Info className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
           <span>{zeroBanner}</span>
         </div>
