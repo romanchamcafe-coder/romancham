@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import { pageMetadata } from "@/lib/seo";
 import Link from "next/link";
 import { getActiveContext } from "@/lib/auth/session";
-import { getPurchaseRegister, getPurchaseReadiness, getPurchaseMeta, type PurchaseFilters } from "@/server/queries/purchases";
+import { getPurchaseRegister, getPurchaseReadiness, getPurchaseMeta, getOutstandingPayables, type PurchaseFilters } from "@/server/queries/purchases";
+import { inr } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { OnboardingChecklist } from "@/components/ui/onboarding-checklist";
 import { PurchasesTable } from "./purchases-table";
@@ -20,9 +21,10 @@ export default async function PurchasesPage({ searchParams }: { searchParams: Pr
   const ctx = await getActiveContext();
   const sp = await searchParams;
   const page = Math.max(1, Number(sp.page) || 1);
-  const anyFilter = !!(sp.q || sp.vendor || sp.invoice || sp.from || sp.to || sp.category);
+  const payment = sp.payment === "paid" ? "paid" : sp.payment === "unpaid" ? "unpaid" : undefined;
+  const anyFilter = !!(sp.q || sp.vendor || sp.invoice || sp.from || sp.to || sp.category || payment);
   const filters: PurchaseFilters = {
-    search: sp.q, vendor: sp.vendor, invoice: sp.invoice, from: sp.from, to: sp.to, category: sp.category,
+    search: sp.q, vendor: sp.vendor, invoice: sp.invoice, from: sp.from, to: sp.to, category: sp.category, payment,
     sort: sp.sort as PurchaseSortKey | undefined, dir: sp.dir === "desc" ? "desc" : sp.dir === "asc" ? "asc" : undefined,
   };
 
@@ -51,8 +53,9 @@ export default async function PurchasesPage({ searchParams }: { searchParams: Pr
   }
 
   const meta = await getPurchaseMeta(ctx!.orgId!);
+  const outstanding = await getOutstandingPayables(ctx!.orgId!, ctx!.branch?.id ?? null);
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
-  const qs = (p: number) => {
+  const baseParams = () => {
     const params = new URLSearchParams();
     if (sp.q) params.set("q", sp.q);
     if (sp.vendor) params.set("vendor", sp.vendor);
@@ -60,8 +63,30 @@ export default async function PurchasesPage({ searchParams }: { searchParams: Pr
     if (sp.from) params.set("from", sp.from);
     if (sp.to) params.set("to", sp.to);
     if (sp.category) params.set("category", sp.category);
+    if (payment) params.set("payment", payment);
+    return params;
+  };
+  const qs = (p: number) => {
+    const params = baseParams();
     params.set("page", String(p));
     return `/purchases?${params.toString()}`;
+  };
+  const payHref = (val?: "paid" | "unpaid") => {
+    const params = baseParams();
+    params.delete("payment");
+    if (val) params.set("payment", val);
+    params.set("page", "1");
+    const s = params.toString();
+    return s ? `/purchases?${s}` : "/purchases";
+  };
+  const payTab = (label: string, val?: "paid" | "unpaid") => {
+    const active = payment === val || (!payment && !val);
+    return (
+      <Link href={payHref(val)}
+        className={"rounded-full border px-3 py-1 text-xs font-medium " + (active ? "border-primary bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted")}>
+        {label}
+      </Link>
+    );
   };
 
   return (
@@ -73,8 +98,18 @@ export default async function PurchasesPage({ searchParams }: { searchParams: Pr
 
       <PurchasesFilters vendors={meta.vendors} categories={meta.categories} />
 
-      <div className="flex justify-end">
-        <ExportButton kind="purchases" filters={filters} filename="romancham-purchases.csv" />
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          {payTab("All")}
+          {payTab("Unpaid", "unpaid")}
+          {payTab("Paid", "paid")}
+        </div>
+        <div className="flex items-center gap-3">
+          <span className={"rounded-md px-3 py-1 text-sm font-medium " + (outstanding > 0 ? "bg-red-50 text-red-700" : "bg-green-50 text-green-700")}>
+            Outstanding payables: {inr(outstanding)}
+          </span>
+          <ExportButton kind="purchases" filters={filters} filename="romancham-purchases.csv" />
+        </div>
       </div>
 
       <PurchasesTable rows={rows} sort={sp.sort} dir={sp.dir} />

@@ -7,11 +7,13 @@ export type PurchaseSortKey =
 
 export type PurchaseFilters = {
   search?: string; vendor?: string; from?: string; to?: string; invoice?: string; category?: string;
+  payment?: "paid" | "unpaid";
   sort?: PurchaseSortKey; dir?: "asc" | "desc";
 };
 
 export type PurchaseRow = {
   id: string; purchase_id: string; payment_mode: string | null; vendor: string; location: string;
+  payment_status: string; paid_on: string | null;
   bill_no: string; bill_date: string; category: string; product: string;
   purchase_uom: string;            // packaging label (Packet, Bottle, …)
   pack_qty: number | null;         // number of packages
@@ -35,7 +37,7 @@ export async function getPurchaseRegister(
       pack_qty, pack_size, purchase_uom, unit_price,
       pack_unit:pack_size_unit_id(abbr),
       ingredients(name),
-      purchases!inner(id, bill_no, bill_date, payment_mode, org_id, branch_id, vendors(name), branches(name))
+      purchases!inner(id, bill_no, bill_date, payment_mode, payment_status, paid_on, org_id, branch_id, vendors(name), branches(name))
     `)
     .eq("purchases.org_id", orgId)
     .limit(5000);
@@ -51,6 +53,8 @@ export async function getPurchaseRegister(
       id: r.id,
       purchase_id: r.purchases?.id ?? "",
       payment_mode: r.purchases?.payment_mode ?? null,
+      payment_status: r.purchases?.payment_status ?? "unpaid",
+      paid_on: r.purchases?.paid_on ?? null,
       vendor: r.purchases?.vendors?.name ?? "—",
       location: r.purchases?.branches?.name ?? "—",
       bill_no: r.purchases?.bill_no ?? "—",
@@ -71,6 +75,8 @@ export async function getPurchaseRegister(
 
   if (filters.vendor) flat = flat.filter((r) => r.vendor === filters.vendor);
   if (filters.category) flat = flat.filter((r) => r.category === filters.category);
+  if (filters.payment === "unpaid") flat = flat.filter((r) => r.payment_status !== "paid");
+  if (filters.payment === "paid") flat = flat.filter((r) => r.payment_status === "paid");
   if (filters.invoice) {
     const s = filters.invoice.toLowerCase();
     flat = flat.filter((r) => String(r.bill_no).toLowerCase().includes(s));
@@ -93,6 +99,18 @@ export async function getPurchaseRegister(
   const total = flat.length;
   const start = Math.max(0, (page - 1) * pageSize);
   return { rows: flat.slice(start, start + pageSize), total };
+}
+
+// Total unpaid vendor bills (matches the AI payables figure): sum of bill
+// totals where payment_status is not 'paid', scoped to org + optional branch.
+export async function getOutstandingPayables(orgId: string, branchId: string | null): Promise<number> {
+  const supabase = await createClient();
+  let q = supabase.from("purchases").select("total, payment_status").eq("org_id", orgId).limit(20000);
+  if (branchId) q = q.eq("branch_id", branchId);
+  const { data } = await q;
+  return (data ?? [])
+    .filter((r: any) => r.payment_status && r.payment_status !== "paid")
+    .reduce((s: number, r: any) => s + (Number(r.total) || 0), 0);
 }
 
 export async function getPurchaseMeta(orgId: string) {

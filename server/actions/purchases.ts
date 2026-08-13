@@ -121,6 +121,19 @@ export async function updatePurchase(id: string, payload: Payload): Promise<Acti
   return { ok: true };
 }
 
+export async function setPurchasePayment(id: string, status: "paid" | "unpaid"): Promise<ActionState> {
+  const ctx = await getActiveContext();
+  if (!ctx?.orgId) return { error: "No active organization" };
+  if (!id) return { error: "Missing purchase id" };
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("set_purchase_payment", { p_id: id, p_status: status, p_paid_on: null });
+  if (error) return { error: friendlyPurchaseError(error.message) };
+  revalidatePath("/purchases");
+  revalidatePath("/ai");
+  revalidatePath("/dashboard");
+  return { ok: true };
+}
+
 export async function deletePurchase(id: string): Promise<ActionState> {
   const ctx = await getActiveContext();
   if (!ctx?.orgId) return { error: "No active organization" };

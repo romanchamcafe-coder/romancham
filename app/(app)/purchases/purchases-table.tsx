@@ -6,14 +6,15 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { toast } from "@/lib/toast";
-import { deletePurchase } from "@/server/actions/purchases";
+import { deletePurchase, setPurchasePayment } from "@/server/actions/purchases";
 import { inr } from "@/lib/utils";
-import { ChevronUp, ChevronDown, Columns3, MoveHorizontal, Pencil, Trash2 } from "lucide-react";
+import { ChevronUp, ChevronDown, Columns3, MoveHorizontal, Pencil, Trash2, Check, Undo2 } from "lucide-react";
 import type { PurchaseRow } from "@/server/queries/purchases";
 
-type ColKind = "badge" | "money" | "num" | "qty" | "packsize";
+type ColKind = "badge" | "money" | "num" | "qty" | "packsize" | "paystatus";
 type Col = { key: string; label: string; numeric?: boolean; kind?: ColKind };
 const COLS: Col[] = [
+  { key: "payment_status", label: "Payment", kind: "paystatus" },
   { key: "payment_mode", label: "Petty cash/Credit", kind: "badge" },
   { key: "vendor", label: "Vendor" },
   { key: "location", label: "Location" },
@@ -57,6 +58,14 @@ export function PurchasesTable({ rows, sort, dir }: { rows: PurchaseRow[]; sort?
     });
   };
 
+  const setPaid = (purchaseId: string, status: "paid" | "unpaid") => {
+    start(async () => {
+      const res = await setPurchasePayment(purchaseId, status);
+      if (res?.error) toast(res.error, "error");
+      else { toast(status === "paid" ? "Bill marked paid" : "Bill marked unpaid"); router.refresh(); }
+    });
+  };
+
   const sortBy = (key: string) => {
     const params = new URLSearchParams(sp.toString());
     const nextDir = sort === key && dir === "asc" ? "desc" : "asc";
@@ -68,6 +77,9 @@ export function PurchasesTable({ rows, sort, dir }: { rows: PurchaseRow[]; sort?
   const cell = (c: Col, r: PurchaseRow) => {
     switch (c.kind) {
       case "badge": return <Badge tone={r.payment_mode === "petty_cash" ? "green" : "amber"}>{modeLabel(r.payment_mode)}</Badge>;
+      case "paystatus": return r.payment_status === "paid"
+        ? <Badge tone="green">Paid{r.paid_on ? ` · ${r.paid_on}` : ""}</Badge>
+        : <Badge tone="red">Unpaid</Badge>;
       case "money": { const v = (r as any)[c.key]; return v == null ? "—" : inr(v as number); }
       case "num": { const v = (r as any)[c.key]; return v == null ? "—" : trim(v as number); }
       case "qty": return fmtQty(r.total_qty, r.base_uom);
@@ -127,6 +139,19 @@ export function PurchasesTable({ rows, sort, dir }: { rows: PurchaseRow[]; sort?
                 ))}
                 <td className="px-3 py-2 text-right">
                   <div className="flex justify-end gap-1">
+                    {r.payment_status === "paid" ? (
+                      <button onClick={() => setPaid(r.purchase_id, "unpaid")} disabled={pending}
+                        aria-label={`Mark bill ${r.bill_no} unpaid`} title="Mark unpaid"
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-50">
+                        <Undo2 className="h-4 w-4" />
+                      </button>
+                    ) : (
+                      <button onClick={() => setPaid(r.purchase_id, "paid")} disabled={pending}
+                        aria-label={`Mark bill ${r.bill_no} paid`} title="Mark as paid"
+                        className="inline-flex h-8 items-center justify-center gap-1 rounded-md px-2 text-xs font-medium text-emerald-700 hover:bg-emerald-50 disabled:opacity-50">
+                        <Check className="h-4 w-4" /> Paid
+                      </button>
+                    )}
                     <Link href={`/purchases/${r.purchase_id}/edit`} aria-label={`Edit bill ${r.bill_no}`}
                       className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground">
                       <Pencil className="h-4 w-4" />
