@@ -64,7 +64,7 @@ export async function POST(req: Request) {
     "gemini-2.5-flash-lite",
   ].filter(Boolean) as string[];
 
-  const body = JSON.stringify({
+  const geminiBody = JSON.stringify({
     system_instruction: { parts: [{ text: system }] },
     contents: [{ role: "user", parts: [{ text: `DATA:\n${JSON.stringify(context)}\n\nQUESTION: ${message}` }] }],
     generationConfig: { temperature: 0.4, maxOutputTokens: 1500 },
@@ -75,7 +75,7 @@ export async function POST(req: Request) {
     try {
       const resp = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
-        { method: "POST", headers: { "content-type": "application/json", "x-goog-api-key": key }, body },
+        { method: "POST", headers: { "content-type": "application/json", "x-goog-api-key": key }, body: geminiBody },
       );
       if (resp.ok) {
         const data: any = await resp.json();
