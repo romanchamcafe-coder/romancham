@@ -8,7 +8,7 @@ import { NAV as nav } from "./nav-items";
 export function Sidebar() {
   const path = usePathname();
   return (
-    <aside className="hidden w-56 shrink-0 border-r bg-card md:block">
+    <aside className="sticky top-0 hidden h-screen w-56 shrink-0 overflow-y-auto border-r bg-card md:block">
       <div className="px-5 py-4">
         <Image src="/logo.png" alt="Romancham" width={107} height={28} priority className="h-7 w-auto" />
       </div>
