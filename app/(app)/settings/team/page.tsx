@@ -12,6 +12,7 @@ import { OrgSettingsForm } from "./org-settings-form";
 import { TeamPanel } from "./team-panel";
 import { BackupRestore } from "./backup-restore";
 import { BackupCenter } from "./backup-center";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 
 export const metadata: Metadata = pageMetadata({ title: "Settings", description: "Manage your organization, branches and team members.", path: "/settings/team" });
 
@@ -31,6 +32,19 @@ export default async function SettingsPage() {
   return (
     <div className="space-y-6">
       <h1 className="text-xl font-semibold">Settings</h1>
+
+      <Card>
+        <CardHeader><CardTitle>Preferences</CardTitle></CardHeader>
+        <CardContent>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-sm font-medium">Appearance</p>
+              <p className="text-sm text-muted-foreground">Choose light, dark, or match your device.</p>
+            </div>
+            <ThemeToggle />
+          </div>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader><CardTitle>Organization</CardTitle></CardHeader>
