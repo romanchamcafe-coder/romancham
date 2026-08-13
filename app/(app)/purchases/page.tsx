@@ -2,11 +2,12 @@ import type { Metadata } from "next";
 import { pageMetadata } from "@/lib/seo";
 import Link from "next/link";
 import { getActiveContext } from "@/lib/auth/session";
-import { getPurchaseRegister, getPurchaseReadiness, getPurchaseMeta, getOutstandingPayables, type PurchaseFilters } from "@/server/queries/purchases";
+import { getPurchaseRegister, getPurchaseBills, getPurchaseReadiness, getPurchaseMeta, getOutstandingPayables, type PurchaseFilters } from "@/server/queries/purchases";
 import { inr } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { OnboardingChecklist } from "@/components/ui/onboarding-checklist";
 import { PurchasesTable } from "./purchases-table";
+import { PurchaseBillsTable } from "./purchases-bills-table";
 import { PurchasesFilters } from "./purchases-filters";
 import { NewPurchaseButton } from "./new-purchase-button";
 import { ExportButton } from "@/components/ui/export-button";
@@ -21,6 +22,7 @@ export default async function PurchasesPage({ searchParams }: { searchParams: Pr
   const ctx = await getActiveContext();
   const sp = await searchParams;
   const page = Math.max(1, Number(sp.page) || 1);
+  const view = sp.view === "bills" ? "bills" : "items";
   const payment = sp.payment === "paid" ? "paid" : sp.payment === "unpaid" ? "unpaid" : undefined;
   const anyFilter = !!(sp.q || sp.vendor || sp.invoice || sp.from || sp.to || sp.category || payment);
   const filters: PurchaseFilters = {
@@ -28,7 +30,11 @@ export default async function PurchasesPage({ searchParams }: { searchParams: Pr
     sort: sp.sort as PurchaseSortKey | undefined, dir: sp.dir === "desc" ? "desc" : sp.dir === "asc" ? "asc" : undefined,
   };
 
-  const { rows, total } = await getPurchaseRegister(ctx!.orgId!, ctx!.branch?.id ?? null, filters, page, PAGE_SIZE);
+  const itemsData = view === "items" ? await getPurchaseRegister(ctx!.orgId!, ctx!.branch?.id ?? null, filters, page, PAGE_SIZE) : null;
+  const billsData = view === "bills" ? await getPurchaseBills(ctx!.orgId!, ctx!.branch?.id ?? null, filters, page, PAGE_SIZE) : null;
+  const rows = itemsData?.rows ?? [];
+  const billRows = billsData?.rows ?? [];
+  const total = view === "bills" ? billsData!.total : itemsData!.total;
 
   if (total === 0 && !anyFilter) {
     const ready = await getPurchaseReadiness(ctx!.orgId!);
@@ -64,8 +70,23 @@ export default async function PurchasesPage({ searchParams }: { searchParams: Pr
     if (sp.to) params.set("to", sp.to);
     if (sp.category) params.set("category", sp.category);
     if (payment) params.set("payment", payment);
+    if (view === "bills") params.set("view", "bills");
     return params;
   };
+  const viewHref = (v: "items" | "bills") => {
+    const params = baseParams();
+    params.delete("view"); params.delete("sort"); params.delete("dir");
+    if (v === "bills") params.set("view", "bills");
+    params.set("page", "1");
+    const s = params.toString();
+    return s ? `/purchases?${s}` : "/purchases";
+  };
+  const viewTab = (label: string, v: "items" | "bills") => (
+    <Link href={viewHref(v)}
+      className={"rounded-md border px-3 py-1.5 text-xs font-medium " + (view === v ? "border-primary bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted")}>
+      {label}
+    </Link>
+  );
   const qs = (p: number) => {
     const params = baseParams();
     params.set("page", String(p));
@@ -98,6 +119,12 @@ export default async function PurchasesPage({ searchParams }: { searchParams: Pr
 
       <PurchasesFilters vendors={meta.vendors} categories={meta.categories} />
 
+      <div className="flex items-center gap-2">
+        <span className="text-xs text-muted-foreground">View:</span>
+        {viewTab("Bill summary", "bills")}
+        {viewTab("Line items", "items")}
+      </div>
+
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           {payTab("All")}
@@ -112,7 +139,9 @@ export default async function PurchasesPage({ searchParams }: { searchParams: Pr
         </div>
       </div>
 
-      <PurchasesTable rows={rows} sort={sp.sort} dir={sp.dir} />
+      {view === "bills"
+        ? <PurchaseBillsTable rows={billRows} sort={sp.sort} dir={sp.dir} />
+        : <PurchasesTable rows={rows} sort={sp.sort} dir={sp.dir} />}
 
       {total > 0 && (
         <div className="flex items-center justify-between text-sm text-muted-foreground">

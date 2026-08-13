@@ -101,6 +101,66 @@ export async function getPurchaseRegister(
   return { rows: flat.slice(start, start + pageSize), total };
 }
 
+// One row per purchase BILL (invoice) — a summary drill-down. Reads the
+// purchases table directly (subtotal = without GST, total = with GST).
+export type PurchaseBillRow = {
+  purchase_id: string; payment_mode: string | null; vendor: string; location: string;
+  bill_no: string; bill_date: string; without_gst: number; with_gst: number;
+  payment_status: string; paid_on: string | null;
+};
+
+export async function getPurchaseBills(
+  orgId: string, branchId: string | null,
+  filters: PurchaseFilters = {}, page = 1, pageSize = 50,
+): Promise<{ rows: PurchaseBillRow[]; total: number; outstanding: number }> {
+  const supabase = await createClient();
+  let q = supabase
+    .from("purchases")
+    .select("id, bill_no, bill_date, payment_mode, payment_status, paid_on, subtotal, total, vendors(name), branches(name)")
+    .eq("org_id", orgId)
+    .limit(20000);
+  if (branchId) q = q.eq("branch_id", branchId);
+  if (filters.from) q = q.gte("bill_date", filters.from);
+  if (filters.to) q = q.lte("bill_date", filters.to);
+  const { data } = await q;
+
+  let rows: PurchaseBillRow[] = (data ?? []).map((r: any) => ({
+    purchase_id: r.id,
+    payment_mode: r.payment_mode ?? null,
+    vendor: r.vendors?.name ?? "—",
+    location: r.branches?.name ?? "—",
+    bill_no: r.bill_no ?? "—",
+    bill_date: r.bill_date ?? "—",
+    without_gst: Number(r.subtotal) || 0,
+    with_gst: Number(r.total) || 0,
+    payment_status: r.payment_status ?? "unpaid",
+    paid_on: r.paid_on ?? null,
+  }));
+
+  const outstanding = rows.filter((r) => r.payment_status !== "paid").reduce((s, r) => s + r.with_gst, 0);
+
+  if (filters.vendor) rows = rows.filter((r) => r.vendor === filters.vendor);
+  if (filters.invoice) { const s = filters.invoice.toLowerCase(); rows = rows.filter((r) => String(r.bill_no).toLowerCase().includes(s)); }
+  if (filters.payment === "unpaid") rows = rows.filter((r) => r.payment_status !== "paid");
+  if (filters.payment === "paid") rows = rows.filter((r) => r.payment_status === "paid");
+  if (filters.search) {
+    const s = filters.search.toLowerCase();
+    rows = rows.filter((r) => r.vendor.toLowerCase().includes(s) || String(r.bill_no).toLowerCase().includes(s));
+  }
+
+  const sortKey = (filters.sort as string) ?? "bill_date";
+  const sortDir = filters.dir ?? (filters.sort ? "asc" : "desc");
+  rows.sort((a: any, b: any) => {
+    const av = a[sortKey] ?? "", bv = b[sortKey] ?? "";
+    const cmp = typeof av === "number" && typeof bv === "number" ? av - bv : String(av).localeCompare(String(bv));
+    return sortDir === "asc" ? cmp : -cmp;
+  });
+
+  const total = rows.length;
+  const start = Math.max(0, (page - 1) * pageSize);
+  return { rows: rows.slice(start, start + pageSize), total, outstanding };
+}
+
 // Total unpaid vendor bills (matches the AI payables figure): sum of bill
 // totals where payment_status is not 'paid', scoped to org + optional branch.
 export async function getOutstandingPayables(orgId: string, branchId: string | null): Promise<number> {
