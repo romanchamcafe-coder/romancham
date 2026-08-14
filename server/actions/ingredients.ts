@@ -32,6 +32,68 @@ export async function createIngredient(_: ActionState | null, formData: FormData
   return { ok: true };
 }
 
+export type RawIngredientRow = {
+  name: string; type?: string; category?: string; unit?: string;
+  gst?: string; reorder?: string; hsn?: string; vendor?: string;
+};
+
+// Bulk-add ingredients from a CSV. Category / Unit / Vendor are matched by
+// name (case-insensitive) to existing masters — unknown ones are left blank.
+// Skips blanks and names that already exist. Returns how many were added.
+export async function importIngredients(
+  rows: RawIngredientRow[],
+): Promise<ActionState & { added?: number; skipped?: number }> {
+  const ctx = await getActiveContext();
+  if (!ctx?.orgId) return { error: "No active organization" };
+  const supabase = await createClient();
+
+  const [{ data: cats }, { data: units }, { data: vendors }, { data: existing }] = await Promise.all([
+    supabase.from("categories").select("id, name").eq("org_id", ctx.orgId).eq("type", "ingredient").eq("is_active", true),
+    supabase.from("units").select("id, name, abbr").eq("org_id", ctx.orgId).eq("is_active", true),
+    supabase.from("vendors").select("id, name").eq("org_id", ctx.orgId).eq("is_active", true),
+    supabase.from("ingredients").select("name").eq("org_id", ctx.orgId).eq("is_active", true),
+  ]);
+
+  const catMap = new Map((cats ?? []).map((c: any) => [String(c.name).trim().toLowerCase(), c.id]));
+  const unitMap = new Map<string, string>();
+  for (const u of units ?? []) {
+    if (u.abbr) unitMap.set(String(u.abbr).trim().toLowerCase(), u.id);
+    if (u.name) unitMap.set(String(u.name).trim().toLowerCase(), u.id);
+  }
+  const venMap = new Map((vendors ?? []).map((v: any) => [String(v.name).trim().toLowerCase(), v.id]));
+  const have = new Set((existing ?? []).map((i: any) => String(i.name).trim().toLowerCase()));
+
+  const seen = new Set<string>();
+  const toAdd: Record<string, unknown>[] = [];
+  for (const r of rows) {
+    const name = (r.name || "").trim();
+    if (!name) continue;
+    const key = name.toLowerCase();
+    if (have.has(key) || seen.has(key)) continue;
+    seen.add(key);
+    const t = (r.type || "").trim().toLowerCase();
+    const material_type = ["purchase", "sales", "both"].includes(t) ? t : "purchase";
+    toAdd.push({
+      org_id: ctx.orgId, name, material_type, fulfillment: "direct",
+      category_id: r.category ? (catMap.get(r.category.trim().toLowerCase()) ?? null) : null,
+      base_unit_id: r.unit ? (unitMap.get(r.unit.trim().toLowerCase()) ?? null) : null,
+      default_vendor_id: r.vendor ? (venMap.get(r.vendor.trim().toLowerCase()) ?? null) : null,
+      hsn_code: (r.hsn || "").trim() || null,
+      default_gst_rate: Number(r.gst) || 0,
+      reorder_level: Number(r.reorder) || 0,
+    });
+  }
+
+  const skipped = rows.filter((r) => (r.name || "").trim()).length - toAdd.length;
+  if (toAdd.length === 0) return { ok: true, added: 0, skipped };
+
+  const { error } = await supabase.from("ingredients").insert(toAdd);
+  if (error) return { error: error.message };
+  revalidatePath("/masters/ingredients");
+  revalidatePath("/purchases/new");
+  return { ok: true, added: toAdd.length, skipped };
+}
+
 export async function deactivateIngredient(formData: FormData): Promise<void> {
   const ctx = await getActiveContext();
   const id = String(formData.get("id") || "");

@@ -6,6 +6,7 @@ import { getMaterialFormData, getMaterials } from "@/server/queries/masters";
 import { createClient } from "@/lib/supabase/server";
 import { IngredientForm } from "./ingredient-form";
 import { IngredientsTable } from "./ingredients-table";
+import { IngredientsIO } from "./ingredients-io";
 import { ArchivedPanel } from "./archived-panel";
 import { cn } from "@/lib/utils";
 
@@ -37,6 +38,7 @@ export default async function MaterialsPage({ searchParams }: { searchParams: Pr
         ))}
       </div>
 
+      <IngredientsIO items={items as any} />
       <IngredientsTable items={items as any} categories={categories} units={units} vendors={vendors} />
       <ArchivedPanel items={archived ?? []} />
     </div>
