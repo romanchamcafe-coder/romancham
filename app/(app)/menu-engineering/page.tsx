@@ -6,6 +6,7 @@ import { computePricing } from "@/lib/menu-pricing";
 import { Card } from "@/components/ui/card";
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
 import { MenuEngineering } from "./menu-engineering";
+import { MenuIO } from "./menu-io";
 import { inr } from "@/lib/utils";
 
 export const metadata: Metadata = pageMetadata({ title: "Menu Engineering", description: "Derive dine-in, takeaway and delivery prices from recipe cost, overheads, commission, GST and target profit.", path: "/menu-engineering" });
@@ -23,6 +24,8 @@ export default async function MenuEngineeringPage() {
       </div>
 
       <MenuEngineering items={items} />
+
+      <MenuIO items={items} />
 
       <Card className="overflow-x-auto">
         <Table>
