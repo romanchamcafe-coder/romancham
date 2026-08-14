@@ -1,7 +1,7 @@
 "use client";
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { createCategory, updateCategory, archiveCategory } from "@/server/actions/categories";
+import { createCategory, updateCategory, archiveCategory, importCategories } from "@/server/actions/categories";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,7 +10,7 @@ import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { EmptyState } from "@/components/ui/empty-state";
 import { toast } from "@/lib/toast";
-import { Pencil, Trash2, Check, X, Tag } from "lucide-react";
+import { Pencil, Trash2, Check, X, Tag, Download, Upload } from "lucide-react";
 
 type Cat = { id: string; name: string };
 
@@ -48,6 +48,53 @@ export function CategoryManager({ rows, type = "ingredient" }: { rows: Cat[]; ty
     });
   };
 
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const exportCsv = () => {
+    const esc = (s: string) => (/[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s);
+    const csv = ["Category", ...rows.map((r) => esc(r.name))].join("\r\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `categories-${type}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const onImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const text = String(reader.result || "");
+      // Take the first column of each line (works for a plain list or a CSV export).
+      const names = text.split(/\r?\n/).map((line) => {
+        const q = line.match(/^\s*"((?:[^"]|"")*)"/);
+        const v = q ? q[1].replace(/""/g, '"') : line.split(",")[0];
+        return (v || "").trim();
+      }).filter(Boolean);
+      if (names.length && names[0].toLowerCase() === "category") names.shift();
+      if (names.length === 0) {
+        toast("No category names found in the file", "error");
+        if (fileRef.current) fileRef.current.value = "";
+        return;
+      }
+      start(async () => {
+        const res = await importCategories(names, type);
+        if (res.error) toast(res.error, "error");
+        else {
+          const added = res.added ?? 0;
+          const skipped = res.skipped ?? 0;
+          toast(`Imported ${added} categor${added === 1 ? "y" : "ies"}${skipped ? `, skipped ${skipped} duplicate/blank` : ""}`);
+          router.refresh();
+        }
+        if (fileRef.current) fileRef.current.value = "";
+      });
+    };
+    reader.readAsText(file);
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-end gap-2 rounded-lg border bg-card p-4">
@@ -64,6 +111,17 @@ export function CategoryManager({ rows, type = "ingredient" }: { rows: Cat[]; ty
           />
         </div>
         <Button onClick={add} disabled={pending}>{pending ? "Adding…" : "Add Category"}</Button>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2">
+        <Button variant="outline" size="sm" onClick={exportCsv} disabled={rows.length === 0}>
+          <Download className="h-4 w-4" /> Export CSV
+        </Button>
+        <Button variant="outline" size="sm" onClick={() => fileRef.current?.click()} disabled={pending}>
+          <Upload className="h-4 w-4" /> Import CSV
+        </Button>
+        <input ref={fileRef} type="file" accept=".csv,.txt" className="hidden" onChange={onImport} aria-hidden />
+        <span className="text-xs text-muted-foreground">Bulk add: one category name per line. Existing names are skipped.</span>
       </div>
 
       {rows.length === 0 ? (
