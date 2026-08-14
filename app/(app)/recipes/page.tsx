@@ -7,6 +7,7 @@ import { getRecipeData } from "@/server/queries/recipes";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
 import { RecipeBuilder } from "./recipe-builder";
+import { RecipesIO } from "./recipes-io";
 import { OnboardingChecklist } from "@/components/ui/onboarding-checklist";
 import { inr } from "@/lib/utils";
 
@@ -38,6 +39,8 @@ export default async function RecipesPage() {
       <h1 className="text-xl font-semibold">Recipes <span className="text-sm font-normal text-muted-foreground">→ Food Cost</span></h1>
       <p className="text-sm text-muted-foreground">Define what each Sales item is made of. The recipe cost feeds <b>Food Cost %</b> on the dashboard (matched to your uploaded sales by item name).</p>
       <RecipeBuilder salesItems={salesItems} purchaseItems={purchaseItems} costMap={costMap} recipes={recipeList.map((r) => ({ id: r.id, components: r.components.map((c) => ({ component_id: c.component_id, qty: c.qty })) }))} />
+
+      <RecipesIO recipes={recipeList} />
 
       <Card className="overflow-x-auto">
         <Table>
