@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { AdjustForm } from "./adjust-form";
+import { InventoryIO } from "./inventory-io";
 import { inr } from "@/lib/utils";
 
 export default async function InventoryPage() {
@@ -36,6 +37,8 @@ export default async function InventoryPage() {
         <Card><CardContent className="pt-6"><p className="text-xs text-muted-foreground">Low / out of stock</p><p className="mt-1 text-xl font-bold sm:text-2xl">{lowCount}</p></CardContent></Card>
         <Card className="col-span-2 sm:col-span-1"><CardContent className="pt-6"><p className="text-xs text-muted-foreground">Stock value (FIFO)</p><p className="mt-1 text-xl font-bold sm:text-2xl">{inr(totalValue)}</p></CardContent></Card>
       </div>
+
+      <InventoryIO rows={rows} />
 
       <Card className="overflow-x-auto">
         <Table>
