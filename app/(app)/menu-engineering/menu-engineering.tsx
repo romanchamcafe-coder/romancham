@@ -91,13 +91,15 @@ export function MenuEngineering({ items }: { items: MenuItem[] }) {
             {!item?.hasRecipe && <span className="ml-2 text-amber-600 dark:text-amber-400">— build this item&apos;s recipe first for an accurate cost.</span>}
           </div>
 
+          <p className="text-xs text-muted-foreground">Every input is a <span className="font-medium text-foreground">% of the recipe cost</span> — e.g. Labor 15% means labor adds 15% of {inr(round2(recipeCost))} to this item.</p>
+
           <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-4">
-            {field("Packaging cost", "packaging", "₹")}
+            {field("Packaging", "packaging", "%")}
             {field("Wastage", "wastage", "%")}
-            {field("Labor cost", "labor", "₹")}
-            {field("Utility cost", "utility", "₹")}
-            {field("Overhead cost", "overhead", "₹")}
-            {field("Marketing cost", "marketing", "₹")}
+            {field("Labor", "labor", "%")}
+            {field("Utility", "utility", "%")}
+            {field("Overhead", "overhead", "%")}
+            {field("Marketing", "marketing", "%")}
             {field("Commission (delivery)", "commission", "%")}
             {field("Target profit", "targetProfit", "%")}
             {field("GST", "gst", "%")}
@@ -111,9 +113,9 @@ export function MenuEngineering({ items }: { items: MenuItem[] }) {
                 <tbody>
                   <Row label="Recipe cost" v={money(recipeCost)} />
                   <Row label={`+ Wastage (${num(inp.wastage) || 0}%)`} v={money(r.recipeAfterWastage - recipeCost)} />
-                  <Row label="+ Labor + Utility + Overhead + Marketing" v={money(r.overheads)} />
+                  <Row label={`+ Labor + Utility + Overhead + Marketing (${(num(inp.labor) + num(inp.utility) + num(inp.overhead) + num(inp.marketing)) || 0}%)`} v={money(r.overheads)} />
                   <Row label="Dine-in cost" v={money(r.dineCost)} strong />
-                  <Row label="+ Packaging (takeaway/delivery)" v={money(num(inp.packaging))} />
+                  <Row label={`+ Packaging (${num(inp.packaging) || 0}%, takeaway/delivery)`} v={money(r.packagingCost)} />
                   <Row label="Takeaway / Delivery cost" v={money(r.otherCost)} strong />
                 </tbody>
               </table>

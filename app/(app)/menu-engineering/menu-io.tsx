@@ -8,7 +8,7 @@ import { computePricing } from "@/lib/menu-pricing";
 import { importMenuPricing, type RawMenuRow } from "@/server/actions/menu";
 import type { MenuItem } from "@/server/queries/menu";
 
-const HEADERS = ["Sales Item", "Recipe Cost", "Packaging", "Wastage %", "Labor", "Utility", "Overhead", "Marketing", "Commission %", "Target Profit %", "GST %", "Dine-in", "Takeaway", "Delivery"];
+const HEADERS = ["Sales Item", "Recipe Cost", "Packaging %", "Wastage %", "Labor %", "Utility %", "Overhead %", "Marketing %", "Commission %", "Target Profit %", "GST %", "Dine-in", "Takeaway", "Delivery"];
 const n2 = (v: number) => (Math.round(v * 100) / 100).toString();
 
 function parseCsv(text: string): string[][] {
@@ -68,8 +68,8 @@ export function MenuIO({ items }: { items: MenuItem[] }) {
       const iName = idx("sales item", "item", "product");
       if (iName < 0) { toast("CSV needs a 'Sales Item' column. Tip: export first for the right format.", "error"); if (fileRef.current) fileRef.current.value = ""; return; }
       const cols = {
-        packaging: idx("packaging", "packaging cost"), wastage: idx("wastage %", "wastage"), labor: idx("labor", "labour", "labor cost"),
-        utility: idx("utility", "utility cost"), overhead: idx("overhead", "overhead cost"), marketing: idx("marketing", "marketing cost"),
+        packaging: idx("packaging %", "packaging", "packaging cost"), wastage: idx("wastage %", "wastage"), labor: idx("labor %", "labor", "labour %", "labour", "labor cost"),
+        utility: idx("utility %", "utility", "utility cost"), overhead: idx("overhead %", "overhead", "overhead cost"), marketing: idx("marketing %", "marketing", "marketing cost"),
         commission: idx("commission %", "commission"), targetProfit: idx("target profit %", "target profit", "profit %"), gst: idx("gst %", "gst"),
       };
       const at = (r: string[], i: number) => (i >= 0 ? (r[i] || "").trim() : "");
@@ -104,7 +104,7 @@ export function MenuIO({ items }: { items: MenuItem[] }) {
         <Upload className="h-4 w-4" /> Import CSV
       </Button>
       <input ref={fileRef} type="file" accept=".csv,.txt" className="hidden" onChange={onImport} aria-hidden />
-      <span className="text-xs text-muted-foreground">Bulk price: fill the cost columns and import — dine-in/takeaway/delivery prices are recalculated from each item&apos;s recipe.</span>
+      <span className="text-xs text-muted-foreground">Bulk price: fill the % columns and import — dine-in/takeaway/delivery prices are recalculated from each item&apos;s recipe.</span>
     </div>
   );
 }
