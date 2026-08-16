@@ -5,6 +5,7 @@ import { getNotifications } from "@/server/queries/notifications";
 import { getDashboard, getActivityCounts } from "@/server/queries/dashboard";
 import { getAnalytics } from "@/server/queries/analytics";
 import { getIntelligence } from "@/server/ai/analytics";
+import { getPncOverview } from "@/server/queries/pnc";
 import { HealthScore, InsightList, Briefing } from "@/components/ai/panels";
 import { AlertTriangle } from "lucide-react";
 import Link from "next/link";
@@ -67,6 +68,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
   ]);
 
   const intel = await getIntelligence(ctx.orgId, ctx.branch?.id ?? null, r.from, r.to, r.label);
+  const pnc = await getPncOverview(ctx.orgId, ctx.branch?.id ?? null).catch(() => null);
 
   const allZero = m.revenue === 0 && m.purchases === 0 && m.gross_profit === 0 && m.net_profit === 0;
   const zeroBanner = !allZero ? null
@@ -132,6 +134,33 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
           </Card>
         ))}
       </div>
+
+      {pnc && (pnc.storeValue || pnc.displayValue || pnc.producedToday || pnc.wastageToday || pnc.nearExpiry.length > 0) ? (
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <h2 className="flex items-center gap-1.5 text-sm font-semibold text-muted-foreground"><Package className="h-4 w-4" aria-hidden /> Production &amp; Consumption (today)</h2>
+            <Link href="/production-consumption" className="text-xs text-primary hover:underline">Open module →</Link>
+          </div>
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-6">
+            {[
+              { label: "Raw consumed", value: inr(pnc.rawConsumedToday) },
+              { label: "Produced (units)", value: String(Math.round(pnc.producedToday * 100) / 100) },
+              { label: "In store", value: inr(pnc.storeValue) },
+              { label: "On display", value: inr(pnc.displayValue) },
+              { label: "Wastage", value: inr(pnc.wastageToday) },
+              { label: "Efficiency", value: `${Math.round(pnc.efficiency)}%` },
+            ].map((k) => (
+              <Card key={k.label}><CardContent className="pt-4">
+                <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{k.label}</p>
+                <p className="mt-1 text-lg font-bold tracking-tight">{k.value}</p>
+              </CardContent></Card>
+            ))}
+          </div>
+          {pnc.nearExpiry.length > 0 && (
+            <p className="text-xs text-amber-700 dark:text-amber-300">⚠ {pnc.nearExpiry.length} batch(es) expiring within 3 days — see <Link href="/production-consumption" className="underline">Production &amp; Consumption</Link>.</p>
+          )}
+        </div>
+      ) : null}
 
       {/* AI Business Insights */}
       {!allZero && (

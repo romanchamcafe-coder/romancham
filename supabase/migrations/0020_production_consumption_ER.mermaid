@@ -1,0 +1,134 @@
+%% Romancham — Production & Consumption module (Phase 1 ER diagram)
+%% NEW tables are prefixed in comments. Existing tables shown with (existing).
+erDiagram
+    organizations   ||--o{ branches : has
+    organizations   ||--o{ ingredients : owns
+    branches        ||--o{ production_batch : "produced at"
+    branches        ||--o{ stock_ledger : "posted at"
+
+    %% ---- Product master (existing, reused) ----
+    ingredients {
+        uuid id PK
+        text name
+        text material_type "purchase|sales|both"
+        text fulfillment "direct=MADE_TO_ORDER | stock=BATCH_PRODUCED"
+        bool is_active
+    }
+
+    item_recipe {
+        uuid sales_item_id FK "finished good"
+        uuid component_id FK "raw ingredient"
+        numeric qty "per 1 sellable unit"
+        int version
+    }
+    ingredients ||--o{ item_recipe : "recipe of"
+
+    %% ---- NEW: production batch header ----
+    production_batch {
+        uuid id PK
+        uuid org_id FK
+        uuid branch_id FK
+        text batch_code UK
+        uuid sales_item_id FK
+        int recipe_version
+        date production_date
+        numeric planned_qty
+        numeric actual_yield
+        numeric raw_material_cost
+        numeric cost_per_stock_unit
+        numeric cost_per_portion
+        date expiry_date
+        enum status "active|depleted|expired|discarded"
+    }
+    ingredients      ||--o{ production_batch : "batch of"
+
+    %% ---- NEW: immutable stock ledger (finished goods) ----
+    stock_ledger {
+        uuid id PK
+        uuid org_id FK
+        uuid branch_id FK
+        timestamptz txn_date
+        enum txn_type "purchase|production_consumption|production_output|transfer|sale|wastage|adjustment|reversal"
+        enum item_kind "raw|finished"
+        uuid item_id FK
+        uuid batch_id FK
+        enum location "store|display"
+        numeric qty "SIGNED"
+        numeric unit_cost
+        numeric total_value
+        text ref_table
+        uuid ref_id
+        uuid reversal_ref FK "self -> stock_ledger"
+    }
+    production_batch ||--o{ stock_ledger : "FIFO layer"
+    ingredients      ||--o{ stock_ledger : "moves"
+    stock_ledger     ||--o{ stock_ledger : "reversal of"
+
+    %% ---- NEW: transfer header (Store -> Display) ----
+    stock_transfer {
+        uuid id PK
+        uuid org_id FK
+        uuid branch_id FK
+        date transfer_date
+        enum from_location "store"
+        enum to_location "display"
+        uuid sales_item_id FK
+        uuid batch_id FK "FIFO if null"
+        numeric qty
+    }
+    production_batch ||--o{ stock_transfer : "transfers"
+    ingredients      ||--o{ stock_transfer : "of"
+
+    %% ---- NEW: wastage ----
+    wastage_entry {
+        uuid id PK
+        uuid org_id FK
+        uuid branch_id FK
+        date wastage_date
+        uuid sales_item_id FK
+        uuid batch_id FK
+        enum location "store|display"
+        numeric qty
+        enum reason "expired|over_portioned|staff_meal|complimentary|damaged|trial_batch|customer_return|quality_rejection"
+        numeric value_lost
+    }
+    production_batch ||--o{ wastage_entry : "wasted from"
+    ingredients      ||--o{ wastage_entry : "of"
+
+    %% ---- NEW: blind physical count ----
+    physical_count {
+        uuid id PK
+        uuid org_id FK
+        uuid branch_id FK
+        date count_date
+        enum location "store|display"
+        uuid sales_item_id FK
+        numeric system_qty
+        numeric counted_qty
+        numeric variance_qty
+        numeric variance_pct
+        numeric variance_value
+        enum approval_status "pending|approved|rejected"
+    }
+    ingredients      ||--o{ physical_count : "counted"
+
+    %% ---- NEW: day-close lock ----
+    consumption_period {
+        uuid id PK
+        uuid org_id FK
+        uuid branch_id FK
+        date business_date
+        enum status "open|closed"
+        uuid closed_by FK
+        timestamptz closed_at
+    }
+    branches ||--o{ consumption_period : "closes day"
+
+    %% ---- Raw materials stay in the EXISTING ledger ----
+    inventory_movements {
+        uuid id PK
+        uuid ingredient_id FK
+        enum movement_type "opening|purchase|consumption|adjustment|transfer_in|transfer_out|wastage"
+        numeric qty "SIGNED"
+    }
+    ingredients ||--o{ inventory_movements : "raw stock (existing)"
