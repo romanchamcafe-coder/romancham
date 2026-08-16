@@ -1,0 +1,31 @@
+=== fixlock ===
+REMOVED
+=== git ===
+[main eb84640] feat(production-consumption): immutable stock ledger, FIFO batches, production log, transfer, wastage, physical count, consumption report, POS sync, AI + dashboard widgets
+ 26 files changed, 2425 insertions(+), 1 deletion(-)
+ create mode 100644 app/(app)/production-consumption/count/approve-button.tsx
+ create mode 100644 app/(app)/production-consumption/count/count-form.tsx
+ create mode 100644 app/(app)/production-consumption/count/page.tsx
+ create mode 100644 app/(app)/production-consumption/day-close-bar.tsx
+ create mode 100644 app/(app)/production-consumption/page.tsx
+ create mode 100644 app/(app)/production-consumption/production/page.tsx
+ create mode 100644 app/(app)/production-consumption/production/production-log-form.tsx
+ create mode 100644 app/(app)/production-consumption/report/page.tsx
+ create mode 100644 app/(app)/production-consumption/report/report-range.tsx
+ create mode 100644 app/(app)/production-consumption/report/report-tabs.tsx
+ create mode 100644 app/(app)/production-consumption/sync-sales-button.tsx
+ create mode 100644 app/(app)/production-consumption/transfer/page.tsx
+ create mode 100644 app/(app)/production-consumption/transfer/transfer-form.tsx
+ create mode 100644 app/(app)/production-consumption/wastage/page.tsx
+ create mode 100644 app/(app)/production-consumption/wastage/wastage-form.tsx
+ create mode 100644 fixlock_log.txt
+ create mode 100644 lib/fifo.ts
+ create mode 100644 server/actions/pnc.ts
+ create mode 100644 server/queries/pnc.ts
+ create mode 100644 supabase/migrations/0020_production_consumption.sql
+ create mode 100644 supabase/migrations/0020_production_consumption_ER.mermaid
+ create mode 100644 supabase/migrations/0021_production_consumption_rpcs.sql
+ create mode 100644 tsconfig.tsbuildinfo
+To https://github.com/romanchamcafe-coder/romancham.git
+   ac593d5..eb84640  main -> main
+=== DONE ===
