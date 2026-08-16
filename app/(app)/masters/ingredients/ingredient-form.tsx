@@ -14,6 +14,7 @@ export function IngredientForm({ categories, units, vendors }: { categories: Opt
   const [uomError, setUomError] = useState("");
   const [type, setType] = useState("purchase");
   const isSales = type === "sales";
+  const showFulfillment = type === "sales" || type === "both";
   useEffect(() => { if (state?.ok) { ref.current?.reset(); setUomError(""); setType("purchase"); } }, [state]);
   return (
     <form ref={ref} action={action} className="rounded-lg border bg-card p-4">
@@ -56,6 +57,15 @@ export function IngredientForm({ categories, units, vendors }: { categories: Opt
             <Label>Default vendor</Label>
             <select name="default_vendor_id" className={sel} aria-label="Default vendor"><option value="">—</option>
               {vendors.map((v) => <option key={v.id} value={v.id}>{v.name}</option>)}
+            </select>
+          </div>
+        )}
+        {showFulfillment && (
+          <div className="space-y-1.5">
+            <Label>Fulfillment</Label>
+            <select name="fulfillment" className={sel} defaultValue="direct" aria-label="Fulfillment">
+              <option value="direct">Made to order (backflush on sale)</option>
+              <option value="stock">Made to stock (batch-produced)</option>
             </select>
           </div>
         )}

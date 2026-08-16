@@ -71,7 +71,12 @@ export function IngredientsTable({ items, categories, units, vendors }: {
             {items.map((i) => (
               <TR key={i.id}>
                 <TD className="font-medium">{i.name}</TD>
-                <TD><Badge tone={i.material_type === "sales" ? "green" : i.material_type === "both" ? "amber" : "muted"}>{typeLabel[i.material_type] ?? i.material_type}</Badge></TD>
+                <TD>
+                  <div className="flex flex-wrap items-center gap-1">
+                    <Badge tone={i.material_type === "sales" ? "green" : i.material_type === "both" ? "amber" : "muted"}>{typeLabel[i.material_type] ?? i.material_type}</Badge>
+                    {(i.material_type === "sales" || i.material_type === "both") && i.fulfillment === "stock" && <Badge tone="muted">Made to stock</Badge>}
+                  </div>
+                </TD>
                 <TD>{i.category_name}</TD>
                 <TD>{i.uom}</TD>
                 <TD>{i.default_gst_rate ?? 0}%</TD>
@@ -132,6 +137,15 @@ export function IngredientsTable({ items, categories, units, vendors }: {
                 <select id="ei-vendor" className={sel} value={v.default_vendor_id} onChange={set("default_vendor_id")}>
                   <option value="">—</option>
                   {vendors.map((ve) => <option key={ve.id} value={ve.id}>{ve.name}</option>)}
+                </select>
+              </div>
+            )}
+            {(v.material_type === "sales" || v.material_type === "both") && (
+              <div className="space-y-1.5">
+                <Label htmlFor="ei-fulfillment">Fulfillment</Label>
+                <select id="ei-fulfillment" className={sel} value={v.fulfillment} onChange={set("fulfillment")}>
+                  <option value="direct">Made to order (backflush on sale)</option>
+                  <option value="stock">Made to stock (batch-produced)</option>
                 </select>
               </div>
             )}
