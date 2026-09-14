@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Romancham — Kitchen Guide (How the App Links Together)</title>
+<style>
+  :root{
+    --ink:#1f2430; --muted:#6b7280; --line:#e5e7eb; --bg:#ffffff;
+    --orange:#f26a21; --orange-soft:#fff2ea; --orange-line:#f6b892;
+    --grey:#eef1f5; --grey-line:#cfd6df;
+    --green:#eafaf0; --green-line:#8fd6ab; --green-ink:#14683c;
+    --blue:#eaf2ff; --blue-line:#9cc0f5; --blue-ink:#1e4fa3;
+    --red:#fdecec; --red-line:#f2a8a8; --red-ink:#a12525;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:#f3f4f6;color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+  .sheet{background:var(--bg);width:1120px;max-width:100%;margin:16px auto;padding:22px 26px 18px;
+    border-radius:14px;box-shadow:0 8px 30px rgba(0,0,0,.08)}
+  a{color:inherit;text-decoration:none}
+
+  header{display:flex;align-items:center;justify-content:space-between;gap:16px;border-bottom:3px solid var(--orange);padding-bottom:12px}
+  .brand{font-size:26px;font-weight:800;color:var(--orange);letter-spacing:.3px}
+  .brand small{display:block;font-size:12.5px;font-weight:600;color:var(--muted);letter-spacing:0}
+  .openapp{background:var(--orange);color:#fff;font-weight:700;font-size:13px;padding:9px 14px;border-radius:9px;white-space:nowrap}
+
+  .legend{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;margin:12px 0 4px;font-size:12px;color:var(--muted)}
+  .chip{display:inline-flex;align-items:center;gap:6px}
+  .dot{width:11px;height:11px;border-radius:3px;border:1px solid rgba(0,0,0,.15)}
+  .d-grey{background:var(--grey)} .d-orange{background:var(--orange-soft);border-color:var(--orange-line)}
+  .d-green{background:var(--green)} .d-blue{background:var(--blue)} .d-red{background:var(--red)}
+
+  .stage{font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin:16px 0 8px}
+  .stage b{color:var(--orange)}
+
+  .row{display:flex;align-items:stretch;gap:8px;flex-wrap:wrap}
+  .card{flex:1 1 0;min-width:120px;border-radius:11px;border:1.5px solid var(--grey-line);background:var(--grey);
+    padding:9px 11px;display:flex;flex-direction:column;gap:2px;transition:transform .05s}
+  .card:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,0,0,.08)}
+  .card .t{font-weight:800;font-size:13.5px;display:flex;align-items:center;gap:6px}
+  .card .d{font-size:11.5px;color:#4b5563;line-height:1.28}
+  .card .u{font-size:10.5px;color:var(--muted);margin-top:2px;font-weight:600}
+  .ic{font-size:15px;line-height:1}
+
+  .o{background:var(--orange-soft);border-color:var(--orange-line)}
+  .g{background:var(--green);border-color:var(--green-line)}
+  .b{background:var(--blue);border-color:var(--blue-line)}
+  .r{background:var(--red);border-color:var(--red-line)}
+
+  .arrow{align-self:center;color:var(--orange);font-size:22px;font-weight:900;flex:0 0 auto;padding:0 1px}
+  .spine .card .t{font-size:14px}
+
+  .note{font-size:12px;color:#4b5563;background:#fafbfc;border:1px dashed var(--line);border-radius:10px;padding:9px 12px;margin-top:10px;line-height:1.4}
+  .note b{color:var(--ink)}
+  .split{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
+  .side{flex:1 1 0;min-width:240px;border-radius:11px;padding:9px 12px;border:1.5px solid}
+  .side.made{background:var(--orange-soft);border-color:var(--orange-line)}
+  .side.stock{background:var(--blue);border-color:var(--blue-line)}
+  .side h4{margin:0 0 3px;font-size:13px}
+  .side p{margin:0;font-size:11.6px;color:#4b5563;line-height:1.35}
+
+  .routine{margin-top:14px;border-top:2px dashed var(--orange-line);padding-top:12px}
+  .routine h3{margin:0 0 8px;font-size:14px;color:var(--orange)}
+  .steps{display:flex;gap:8px;flex-wrap:wrap}
+  .step{flex:1 1 0;min-width:150px;background:#fff;border:1.5px solid var(--orange-line);border-radius:10px;padding:8px 10px}
+  .step .n{display:inline-flex;width:20px;height:20px;border-radius:50%;background:var(--orange);color:#fff;font-size:12px;font-weight:800;align-items:center;justify-content:center;margin-right:6px}
+  .step .s{font-weight:700;font-size:12.5px}
+  .step .x{font-size:11.3px;color:#4b5563;margin-top:3px;line-height:1.3}
+
+  footer{margin-top:14px;font-size:11px;color:var(--muted);display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px;border-top:1px solid var(--line);padding-top:8px}
+
+  @media print{
+    html,body{background:#fff}
+    .sheet{box-shadow:none;margin:0;width:100%;border-radius:0;padding:10px 14px}
+    @page{size:A4 landscape;margin:8mm}
+    .card:hover{transform:none;box-shadow:none}
+  }
+</style>
+</head>
+<body>
+<div class="sheet">
+
+  <header>
+    <div class="brand">Romancham — Kitchen Guide
+      <small>How the app links together · tap any box to open that screen</small>
+    </div>
+    <a class="openapp" href="https://romancham-nine.vercel.app/dashboard" target="_blank" rel="noopener">Open the app ↗</a>
+  </header>
+
+  <div class="legend">
+    <span class="chip"><span class="dot d-grey"></span> Set up once</span>
+    <span class="chip"><span class="dot d-orange"></span> Daily stock flow</span>
+    <span class="chip"><span class="dot d-red"></span> Losses &amp; checks</span>
+    <span class="chip"><span class="dot d-green"></span> Check &amp; decide</span>
+    <span class="chip" style="margin-left:auto">The golden rule: <b>Production&nbsp;→&nbsp;Store&nbsp;→&nbsp;Display&nbsp;→&nbsp;Sold</b>. Stock never jumps a step.</span>
+  </div>
+
+  <!-- STAGE 1 -->
+  <div class="stage">① <b>Set up once</b> — tells the app what you make and what it costs</div>
+  <div class="row">
+    <a class="card" href="https://romancham-nine.vercel.app/masters/ingredients" target="_blank" rel="noopener">
+      <div class="t"><span class="ic">🧂</span>Ingredients</div>
+      <div class="d">Every raw item &amp; every product you sell. Mark a product <b>Made to order</b> or <b>Made to stock</b>.</div>
+      <div class="u">Masters ▸ Ingredients</div>
+    </a>
+    <a class="card" href="https://romancham-nine.vercel.app/recipes" target="_blank" rel="noopener">
+      <div class="t"><span class="ic">📖</span>Recipes</div>
+      <div class="d">What goes into each product. This is how the app knows the raw usage.</div>
+      <div class="u">Recipes</div>
+    </a>
+    <a class="card" href="https://romancham-nine.vercel.app/menu-engineering" target="_blank" rel="noopener">
+      <div class="t"><span class="ic">🧮</span>Menu Pricing</div>
+      <div class="d">Builds selling price from recipe cost + overheads (dine-in / takeaway / delivery).</div>
+      <div class="u">Menu Engineering</div>
+    </a>
+    <a class="card" href="https://romancham-nine.vercel.app/masters/vendors" target="_blank" rel="noopener">
+      <div class="t"><span class="ic">🏪</span>Vendors</div>
+      <div class="d">Your suppliers, used when recording purchases.</div>
+      <div class="u">Vendors</div>
+    </a>
+    <a class="card" href="https://romancham-nine.vercel.app/masters/categories" target="_blank" rel="noopener">
+      <div class="t"><span class="ic">🏷️</span>Categories &amp; Units</div>
+      <div class="d">Groups (dessert, beverage…) and units (kg, ml, pcs).</div>
+      <div class="u">Categories · Units (UOM)</div>
+    </a>
+  </div>
+
+  <!-- STAGE 2 -->
+  <div class="stage">② <b>Every day</b> — how stock moves through the café</div>
+  <div class="row spine">
+    <a class="card b" href="https://romancham-nine.vercel.app/purchases" target="_blank" rel="noopener">
+      <div class="t"><span class="ic">🛒</span>Purchases</div>
+      <div class="d">Record what you buy from vendors.</div>
+      <div class="u">Purchases</div>
+    </a>
+    <span class="arrow">→</span>
+    <a class="card b" href="https://romancham-nine.vercel.app/inventory" target="_blank" rel="noopener">
+      <div class="t"><span class="ic">📦</span>Inventory</div>
+      <div class="d">Raw-material stock on hand (grows on purchase).</div>
+      <div class="u">Inventory</div>
+    </a>
+    <span class="arrow">→</span>
+    <a class="card o" href="https://romancham-nine.vercel.app/production-consumption/production" target="_blank" rel="noopener">
+      <div class="t"><span class="ic">🏭</span>Production Log</div>
+      <div class="d">Make a batch. Uses up raw materials, adds finished stock to <b>Store</b>.</div>
+      <div class="u">Production &amp; Consumption ▸ Production</div>
+    </a>
+    <span class="arrow">→</span>
+    <a class="card o" href="https://romancham-nine.vercel.app/production-consumption" target="_blank" rel="noopener">
+      <div class="t"><span class="ic">🧊</span>Store</div>
+      <div class="d">Back-of-house stock (fridge/freezer). Freshly produced batches land here.</div>
+      <div class="u">tap = module hub</div>
+    </a>
+    <span class="arrow">→</span>
+    <a class="card o" href="https://romancham-nine.vercel.app/production-consumption/transfer" target="_blank" rel="noopener">
+      <div class="t"><span class="ic">🔁</span>Stock Transfer</div>
+      <div class="d">Move Store → Display. Oldest batch moves first (FIFO).</div>
+      <div class="u">Production &amp; Consumption ▸ Transfer</div>
+    </a>
+    <span class="arrow">→</span>
+    <a class="card o" href="https://romancham-nine.vercel.app/production-consumption" target="_blank" rel="noopener">
+      <div class="t"><span class="ic">🛎️</span>Display</div>
+      <div class="d">Front counter stock that customers buy from.</div>
+      <div class="u">tap = module hub</div>
+    </a>
+    <span class="arrow">→</span>
+    <a class="card b" href="https://romancham-nine.vercel.app/sales" target="_blank" rel="noopener">
+      <div class="t"><span class="ic">💳</span>Sales (POS)</div>
+      <div class="d">Import Petpooja bill CSV. Then <b>Sync sales → display</b> in the module.</div>
+      <div class="u">Sales · POS Connectors</div>
+    </a>
+    <span class="arrow">→</span>
+    <div class="card g" style="flex:0 0 90px">
+      <div class="t"><span class="ic">✅</span>Sold</div>
+      <div class="d">Stock leaves the system.</div>
+    </div>
+  </div>
+
+  <div class="split">
+    <div class="side made">
+      <h4>☕ Made-to-order items (coffee, juice, shakes)</h4>
+      <p>No batch. When it sells, the app <b>back-flushes</b> — it automatically subtracts the raw ingredients (beans, milk…) straight from Inventory. Skip Production/Transfer for these.</p>
+    </div>
+    <div class="side stock">
+      <h4>🍰 Made-to-stock items (cakes, brownies, ice cream)</h4>
+      <p>Follow the full line: Production → Store → Transfer → Display. When it sells, the app subtracts from <b>Display</b> (the batch you moved to the counter), not from raw materials.</p>
+    </div>
+  </div>
+
+  <!-- STAGE 2b: losses & checks -->
+  <div class="stage">③ <b>Record losses &amp; check stock</b> — do these through the day</div>
+  <div class="row">
+    <a class="card r" href="https://romancham-nine.vercel.app/production-consumption/wastage" target="_blank" rel="noopener">
+      <div class="t"><span class="ic">🗑️</span>Wastage Entry</div>
+      <div class="d">Write off spoiled / dropped / staff-meal items with a reason. Shows value lost.</div>
+      <div class="u">Production &amp; Consumption ▸ Wastage</div>
+    </a>
+    <a class="card r" href="https://romancham-nine.vercel.app/production-consumption/count" target="_blank" rel="noopener">
+      <div class="t"><span class="ic">📋</span>Physical Count</div>
+      <div class="d">Count Display/Store by hand. App reveals the difference vs system after you submit.</div>
+      <div class="u">Production &amp; Consumption ▸ Count</div>
+    </a>
+    <a class="card" href="https://romancham-nine.vercel.app/operations" target="_blank" rel="noopener">
+      <div class="t"><span class="ic">✔️</span>Operations</div>
+      <div class="d">Opening/closing checklists, indents (what to order), cash — daily routines.</div>
+      <div class="u">Operations</div>
+    </a>
+  </div>
+
+  <!-- STAGE 3: check & decide -->
+  <div class="stage">④ <b>Check &amp; decide</b> — see what happened and what to do next</div>
+  <div class="row">
+    <a class="card g" href="https://romancham-nine.vercel.app/dashboard" target="_blank" rel="noopener">
+      <div class="t"><span class="ic">📊</span>Dashboard</div>
+      <div class="d">Today at a glance: produced, in store/display, wastage, alerts.</div>
+      <div class="u">Dashboard</div>
+    </a>
+    <a class="card g" href="https://romancham-nine.vercel.app/production-consumption/report" target="_blank" rel="noopener">
+      <div class="t"><span class="ic">📈</span>Consumption Report</div>
+      <div class="d">Raw usage vs stock, finished movement by batch, production vs sales.</div>
+      <div class="u">Production &amp; Consumption ▸ Report</div>
+    </a>
+    <a class="card g" href="https://romancham-nine.vercel.app/ai" target="_blank" rel="noopener">
+      <div class="t"><span class="ic">✨</span>AI Analyst</div>
+      <div class="d">Ask in plain words: what's overproduced, low sell-through, expiring soon.</div>
+      <div class="u">AI Analyst</div>
+    </a>
+    <a class="card g" href="https://romancham-nine.vercel.app/reports" target="_blank" rel="noopener">
+      <div class="t"><span class="ic">🗂️</span>Reports</div>
+      <div class="d">Deeper reports to download and review.</div>
+      <div class="u">Reports</div>
+    </a>
+  </div>
+
+  <!-- DAILY ROUTINE -->
+  <div class="routine">
+    <h3>👨‍🍳 Kitchen in-charge — your daily routine</h3>
+    <div class="steps">
+      <div class="step"><div><span class="n">1</span><span class="s">Morning: produce</span></div>
+        <div class="x">Open <b>Production Log</b>, record each batch you make (cakes, ice cream…). Set an expiry date.</div></div>
+      <div class="step"><div><span class="n">2</span><span class="s">Fill the counter</span></div>
+        <div class="x">Use <b>Stock Transfer</b> to move today's items Store → Display. Repeat-yesterday button is fastest.</div></div>
+      <div class="step"><div><span class="n">3</span><span class="s">During service</span></div>
+        <div class="x">Log any <b>Wastage</b> immediately with a reason. Never guess later.</div></div>
+      <div class="step"><div><span class="n">4</span><span class="s">Closing</span></div>
+        <div class="x">Do a <b>Physical Count</b> of Display, then open <b>Sync sales → display</b> and check the <b>Dashboard</b>.</div></div>
+    </div>
+  </div>
+
+  <footer>
+    <span>Romancham café management · romancham-nine.vercel.app</span>
+    <span>Tip: on a computer, tap any box to jump straight to that screen. Print landscape to pin in the kitchen.</span>
+  </footer>
+
+</div>
+</body>
+</html>
