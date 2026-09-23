@@ -40,7 +40,7 @@ export const ROLE_DESCRIPTIONS: Record<Role, string> = {
   owner: "Full control, including billing and ownership transfer.",
   admin: "Manage the whole workspace, team and settings.",
   branch_manager: "Run day-to-day operations for their branches.",
-  kitchen: "Recipes, production and kitchen checklists.",
+  kitchen: "Recipes, production, inventory and purchases — no Sales or P&L.",
   store: "Inventory, indents and purchase requests.",
   cashier: "Sales, cash reconciliation and daily operations.",
   accounts: "Finance, expenses and reports.",
@@ -87,7 +87,7 @@ const MATRIX: Record<Resource, Partial<Record<Role, Action[]>>> = {
   finance: { owner: ALL, admin: ALL, branch_manager: RE, accounts: ALL, cashier: RE, viewer: R },
   reports: { owner: ALL, admin: ALL, branch_manager: RE, accounts: RE, cashier: RE, store: RE, kitchen: RE, viewer: RE },
   recipes: { owner: ALL, admin: ALL, branch_manager: CRUE, kitchen: CRUE, store: R, accounts: R, viewer: R },
-  purchases: { owner: ALL, admin: ALL, branch_manager: CRUE, store: CRU, accounts: RE, cashier: R, viewer: R },
+  purchases: { owner: ALL, admin: ALL, branch_manager: CRUE, kitchen: ALL, store: CRU, accounts: RE, cashier: R, viewer: R },
   operations: { owner: ALL, admin: ALL, branch_manager: ALL, kitchen: CRU, store: CRU, cashier: CRU, accounts: RE, viewer: R },
 };
 

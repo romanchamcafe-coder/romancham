@@ -14,7 +14,7 @@ export default async function PurchaseRequestsPage() {
     getRequestFormData(ctx!.orgId!, ctx!.branch?.id ?? null),
     getPurchaseRequests(ctx!.orgId!, ctx!.branch?.id ?? null),
   ]);
-  const canManage = ctx!.role === "owner" || ctx!.role === "manager";
+  const canManage = ["owner", "admin", "manager", "branch_manager", "kitchen"].includes(ctx!.role ?? "");
 
   return (
     <div className="mx-auto max-w-lg space-y-4">

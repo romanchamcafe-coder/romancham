@@ -139,7 +139,7 @@ export async function decidePurchaseRequest(id: string, status: "approved" | "or
   const ctx = await getActiveContext();
   if (!ctx?.orgId) return { error: "No active organization" };
   const gated = status === "approved" || status === "rejected";
-  if (gated && !APPROVER_ROLES.includes(ctx.role ?? "")) return { error: "Only a manager can approve or reject" };
+  if (gated && ![...APPROVER_ROLES, "kitchen"].includes(ctx.role ?? "")) return { error: "Only a manager or kitchen lead can approve or reject" };
   const supabase = await createClient();
   const patch: Record<string, any> = { status };
   if (gated) { patch.decided_by = ctx.user.id; patch.decided_at = new Date().toISOString(); }
