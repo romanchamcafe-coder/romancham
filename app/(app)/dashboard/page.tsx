@@ -6,6 +6,7 @@ import { getDashboard, getActivityCounts } from "@/server/queries/dashboard";
 import { getAnalytics } from "@/server/queries/analytics";
 import { getIntelligence } from "@/server/ai/analytics";
 import { getPncOverview } from "@/server/queries/pnc";
+import { normalizeRole } from "@/lib/auth/permissions";
 import { HealthScore, InsightList, Briefing } from "@/components/ai/panels";
 import { AlertTriangle } from "lucide-react";
 import Link from "next/link";
@@ -67,8 +68,73 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
     getAnalytics(ctx.orgId, ctx.branch?.id ?? null),
   ]);
 
-  const intel = await getIntelligence(ctx.orgId, ctx.branch?.id ?? null, r.from, r.to, r.label);
   const pnc = await getPncOverview(ctx.orgId, ctx.branch?.id ?? null).catch(() => null);
+
+  // Kitchen login: a money-free dashboard — production, stock and alerts only.
+  // No revenue, profit, food-cost, sales charts, top-sellers or AI insights.
+  if (normalizeRole(ctx.role) === "kitchen") {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Dashboard <span className="text-sm font-normal text-muted-foreground">· {ctx.branch?.name}</span></h1>
+          <p className="mt-1 text-sm text-muted-foreground">Your kitchen at a glance — production, stock and what needs attention.</p>
+        </div>
+
+        {topAlerts.length > 0 && (
+          <div className="rounded-lg border border-amber-200 bg-amber-50/60 p-3 dark:border-amber-900/60 dark:bg-amber-950/30">
+            <div className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-amber-800 dark:text-amber-200">
+              <AlertTriangle className="h-4 w-4" aria-hidden /> Needs attention ({notif.unread})
+            </div>
+            <div className="grid gap-2 sm:grid-cols-2">
+              {topAlerts.map((n) => (
+                <Link key={n.id} href={n.href ?? "/dashboard"} className="flex items-start gap-2 rounded-md border bg-card p-2.5 text-sm hover:border-primary/50">
+                  <span className={`mt-1 h-2 w-2 shrink-0 rounded-full ${n.priority === "critical" ? "bg-red-500" : n.priority === "high" ? "bg-amber-500" : "bg-blue-500"}`} aria-hidden />
+                  <span className="min-w-0"><span className="block font-medium">{n.title}</span>{n.body && <span className="block text-xs text-muted-foreground">{n.body}</span>}</span>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {pnc && (
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <h2 className="flex items-center gap-1.5 text-sm font-semibold text-muted-foreground"><Package className="h-4 w-4" aria-hidden /> Production &amp; Consumption (today)</h2>
+              <Link href="/production-consumption" className="text-xs text-primary hover:underline">Open module →</Link>
+            </div>
+            <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
+              {[
+                { label: "Raw consumed", value: inr(pnc.rawConsumedToday) },
+                { label: "Produced (units)", value: String(Math.round(pnc.producedToday * 100) / 100) },
+                { label: "In store", value: inr(pnc.storeValue) },
+                { label: "On display", value: inr(pnc.displayValue) },
+                { label: "Wastage", value: inr(pnc.wastageToday) },
+              ].map((k) => (
+                <Card key={k.label}><CardContent className="pt-4">
+                  <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{k.label}</p>
+                  <p className="mt-1 text-lg font-bold tracking-tight">{k.value}</p>
+                </CardContent></Card>
+              ))}
+            </div>
+            {pnc.nearExpiry.length > 0 && (
+              <p className="text-xs text-amber-700 dark:text-amber-300">⚠ {pnc.nearExpiry.length} batch(es) expiring within 3 days — see <Link href="/production-consumption" className="underline">Production &amp; Consumption</Link>.</p>
+            )}
+          </div>
+        )}
+
+        <Card><CardHeader><CardTitle>Low Stock</CardTitle></CardHeader>
+          <CardContent className="space-y-2">
+            {m.low_stock.length ? m.low_stock.map((s) => (
+              <div key={s.name} className="flex items-center justify-between text-sm">
+                <span className="truncate">{s.name}</span><Badge tone="red">{s.qty} ≤ {s.reorder_level}</Badge>
+              </div>
+            )) : <EmptyState icon={<Package className="h-7 w-7" />} title="All stock healthy" description="No items below their reorder level." />}
+          </CardContent></Card>
+      </div>
+    );
+  }
+
+  const intel = await getIntelligence(ctx.orgId, ctx.branch?.id ?? null, r.from, r.to, r.label);
 
   const allZero = m.revenue === 0 && m.purchases === 0 && m.gross_profit === 0 && m.net_profit === 0;
   const zeroBanner = !allZero ? null

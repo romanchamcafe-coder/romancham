@@ -7,12 +7,13 @@ import { NotificationBell } from "./notification-bell";
 import type { Notification } from "@/server/queries/notifications";
 import { LogOut } from "lucide-react";
 
-export function Topbar({ orgName, branches, activeBranch, notifications, unread }: {
+export function Topbar({ orgName, branches, activeBranch, notifications, unread, role }: {
   orgName: string;
   branches: { id: string; name: string }[];
   activeBranch: string | null;
   notifications: Notification[];
   unread: number;
+  role?: string | null;
 }) {
   const [confirm, setConfirm] = useState(false);
 
@@ -31,7 +32,7 @@ export function Topbar({ orgName, branches, activeBranch, notifications, unread 
   return (
     <header className="flex h-14 items-center justify-between gap-2 border-b bg-card px-3 sm:px-4">
       <div className="flex min-w-0 items-center gap-2">
-        <MobileNav />
+        <MobileNav role={role} />
         <div className="truncate font-semibold">{orgName}</div>
       </div>
       <div className="flex shrink-0 items-center gap-1.5 sm:gap-3">

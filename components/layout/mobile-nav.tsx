@@ -7,10 +7,12 @@ import { Menu } from "lucide-react";
 import { Sheet } from "@/components/ui/sheet";
 import { NAV } from "./nav-items";
 import { cn } from "@/lib/utils";
+import { isNavHidden } from "@/lib/auth/access";
 
-export function MobileNav() {
+export function MobileNav({ role }: { role?: string | null }) {
   const [open, setOpen] = useState(false);
   const path = usePathname();
+  const items = NAV.filter((n) => !isNavHidden(role, n.href));
   return (
     <>
       <button
@@ -26,7 +28,7 @@ export function MobileNav() {
           <Image src="/logo.png" alt="Romancham" width={107} height={28} className="h-7 w-auto" />
         </div>
         <nav aria-label="Primary" className="space-y-1 p-2">
-          {NAV.map(({ href, label, icon: Icon }) => {
+          {items.map(({ href, label, icon: Icon }) => {
             const active = path === href || path.startsWith(href + "/");
             return (
               <Link

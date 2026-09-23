@@ -3,6 +3,7 @@ import { pageMetadata } from "@/lib/seo";
 export const metadata: Metadata = pageMetadata({ title: "Operations", description: "Daily checklists, inventory requests, wastage and finance — your operations hub.", path: "/operations" });
 import Link from "next/link";
 import { getActiveContext } from "@/lib/auth/session";
+import { isPathBlocked } from "@/lib/auth/access";
 import { getOpsOverview } from "@/server/queries/operations";
 import { getInventoryCounts } from "@/server/queries/requests";
 import { getTaskStats } from "@/server/queries/tasks";
@@ -18,6 +19,7 @@ export default async function OperationsPage() {
     getInventoryCounts(ctx!.orgId!, ctx!.branch?.id ?? null),
     getTaskStats(ctx!.orgId!, ctx!.branch?.id ?? null),
   ]);
+  const hideFinance = isPathBlocked(ctx?.role, "/operations/finance");
 
   return (
     <div className="space-y-5">
@@ -127,28 +129,30 @@ export default async function OperationsPage() {
         </Link>
       </div>
 
-      {/* Finance */}
-      <div>
-        <div className="mb-2 flex items-center gap-2 text-sm font-semibold"><TrendingUp className="h-4 w-4 text-primary" /> Finance</div>
-        <div className="grid gap-3 sm:grid-cols-2">
-          <Link href="/operations/finance"
-            className="flex items-center justify-between rounded-xl border bg-card p-4 transition active:scale-[.99] hover:border-primary/50">
-            <div>
-              <p className="font-medium">P&amp;L this month</p>
-              <p className="mt-0.5 text-xs text-muted-foreground">Revenue, food cost %, profit</p>
-            </div>
-            <TrendingUp className="h-5 w-5 shrink-0 text-primary" />
-          </Link>
-          <Link href="/operations/cash"
-            className="flex items-center justify-between rounded-xl border bg-card p-4 transition active:scale-[.99] hover:border-primary/50">
-            <div>
-              <p className="font-medium">Cash reconciliation</p>
-              <p className="mt-0.5 text-xs text-muted-foreground">Count the drawer against POS</p>
-            </div>
-            <Wallet className="h-5 w-5 shrink-0 text-primary" />
-          </Link>
+      {/* Finance — hidden for kitchen and other restricted roles */}
+      {!hideFinance && (
+        <div>
+          <div className="mb-2 flex items-center gap-2 text-sm font-semibold"><TrendingUp className="h-4 w-4 text-primary" /> Finance</div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Link href="/operations/finance"
+              className="flex items-center justify-between rounded-xl border bg-card p-4 transition active:scale-[.99] hover:border-primary/50">
+              <div>
+                <p className="font-medium">P&amp;L this month</p>
+                <p className="mt-0.5 text-xs text-muted-foreground">Revenue, food cost %, profit</p>
+              </div>
+              <TrendingUp className="h-5 w-5 shrink-0 text-primary" />
+            </Link>
+            <Link href="/operations/cash"
+              className="flex items-center justify-between rounded-xl border bg-card p-4 transition active:scale-[.99] hover:border-primary/50">
+              <div>
+                <p className="font-medium">Cash reconciliation</p>
+                <p className="mt-0.5 text-xs text-muted-foreground">Count the drawer against POS</p>
+              </div>
+              <Wallet className="h-5 w-5 shrink-0 text-primary" />
+            </Link>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
