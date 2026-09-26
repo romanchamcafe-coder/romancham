@@ -3,6 +3,7 @@
 @tailwind utilities;
 
 :root {
+  --app-build: "2026-09-26b"; /* bump to force browsers to fetch a fresh stylesheet */
   --background: 0 0% 100%;
   --foreground: 222 47% 11%;
   --card: 0 0% 100%;
