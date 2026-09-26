@@ -47,8 +47,9 @@ export async function archiveVendor(id: string): Promise<ActionState> {
   const ctx = await getActiveContext();
   if (!ctx?.orgId) return { error: "No active organization" };
   const supabase = await createClient();
-  const { error } = await supabase.from("vendors").update({ is_active: false }).eq("id", id).eq("org_id", ctx.orgId);
+  const { data, error } = await supabase.from("vendors").update({ is_active: false }).eq("id", id).eq("org_id", ctx.orgId).select("id");
   if (error) return { error: error.message };
+  if (!data || data.length === 0) return { error: "Couldn't remove this vendor — you may not have permission. Ask the owner." };
   revalidatePath("/masters/vendors");
   return { ok: true };
 }
