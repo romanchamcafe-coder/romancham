@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { WASTAGE_REASONS } from "@/lib/ops/checklists";
+import { SearchSelect } from "@/components/ui/search-select";
 
 type Item = { id: string; name: string; unit: string; cost: number };
 const sel = "h-11 w-full rounded-md border border-input bg-background px-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary";
@@ -57,10 +58,7 @@ export function WastageForm({ items }: { items: Item[] }) {
       <div className="grid gap-3">
         <div className="space-y-1.5">
           <Label>Item</Label>
-          <select value={itemId} onChange={(e) => pickItem(e.target.value)} className={sel} aria-label="Item">
-            <option value="">— pick from inventory —</option>
-            {items.map((i) => <option key={i.id} value={i.id}>{i.name}</option>)}
-          </select>
+          <SearchSelect options={items.map((i) => ({ value: i.id, label: i.name }))} value={itemId} onChange={(v) => pickItem(v)} ariaLabel="Item" placeholder="— pick from inventory —" />
           {!itemId && (
             <Input value={freeText} onChange={(e) => setFreeText(e.target.value)} placeholder="…or type an item name" aria-label="Item name" />
           )}

@@ -4,6 +4,7 @@ import { createIngredient } from "@/server/actions/ingredients";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { SearchSelect } from "@/components/ui/search-select";
 
 type Opt = { id: string; name: string; abbr?: string };
 const sel = "h-10 w-full rounded-md border border-input bg-background px-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary";
@@ -30,9 +31,7 @@ export function IngredientForm({ categories, units, vendors }: { categories: Opt
         </div>
         <div className="space-y-1.5">
           <Label>Category</Label>
-          <select name="category_id" className={sel} aria-label="Category"><option value="">—</option>
-            {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-          </select>
+          <SearchSelect options={categories.map((c) => ({ value: c.id, label: c.name }))} name="category_id" ariaLabel="Category" placeholder="—" emptyLabel="—" />
         </div>
         <div className="space-y-1.5">
           <Label>UOM <span className="text-destructive">*</span></Label>
@@ -55,9 +54,7 @@ export function IngredientForm({ categories, units, vendors }: { categories: Opt
         {!isSales && (
           <div className="space-y-1.5">
             <Label>Default vendor</Label>
-            <select name="default_vendor_id" className={sel} aria-label="Default vendor"><option value="">—</option>
-              {vendors.map((v) => <option key={v.id} value={v.id}>{v.name}</option>)}
-            </select>
+            <SearchSelect options={vendors.map((v) => ({ value: v.id, label: v.name }))} name="default_vendor_id" ariaLabel="Default vendor" placeholder="—" emptyLabel="—" />
           </div>
         )}
         {showFulfillment && (

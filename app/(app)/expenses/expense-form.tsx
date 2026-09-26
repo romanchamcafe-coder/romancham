@@ -4,6 +4,7 @@ import { createExpense } from "@/server/actions/expenses";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { SearchSelect } from "@/components/ui/search-select";
 
 type Cat = { id: string; name: string };
 const sel = "h-10 w-full rounded-md border border-input bg-background px-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary";
@@ -17,9 +18,7 @@ export function ExpenseForm({ categories }: { categories: Cat[] }) {
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <div className="space-y-1.5">
           <Label>Category</Label>
-          <select name="category_id" className={sel} aria-label="Expense category"><option value="">—</option>
-            {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-          </select>
+          <SearchSelect options={categories.map((c) => ({ value: c.id, label: c.name }))} name="category_id" ariaLabel="Expense category" placeholder="—" emptyLabel="—" />
         </div>
         <div className="space-y-1.5"><Label>Amount (₹)</Label><Input name="amount" type="number" step="0.01" required placeholder="0" aria-label="Amount in rupees" /></div>
         <div className="space-y-1.5"><Label>Date</Label><Input name="expense_date" type="date" defaultValue={new Date().toISOString().slice(0,10)} aria-label="Expense date" /></div>

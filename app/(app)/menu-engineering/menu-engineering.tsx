@@ -10,6 +10,7 @@ import { inr } from "@/lib/utils";
 import { computePricing } from "@/lib/menu-pricing";
 import { saveMenuPricing } from "@/server/actions/menu";
 import type { MenuItem } from "@/server/queries/menu";
+import { SearchSelect } from "@/components/ui/search-select";
 
 const sel = "h-10 w-full rounded-md border border-input bg-background px-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary";
 const money = (n: number) => inr(Math.round(n));
@@ -78,10 +79,7 @@ export function MenuEngineering({ items }: { items: MenuItem[] }) {
     <Card><CardContent className="space-y-4 pt-6">
       <div className="max-w-sm space-y-1.5">
         <Label>Sales item</Label>
-        <select value={id} onChange={(e) => pick(e.target.value)} className={sel}>
-          <option value="">Select a sales item…</option>
-          {items.map((i) => <option key={i.id} value={i.id}>{i.name}{i.hasRecipe ? "" : " (no recipe yet)"}</option>)}
-        </select>
+        <SearchSelect options={items.map((i) => ({ value: i.id, label: `${i.name}${i.hasRecipe ? "" : " (no recipe yet)"}` }))} value={id} onChange={(v) => pick(v)} placeholder="Select a sales item…" />
       </div>
 
       {id && (

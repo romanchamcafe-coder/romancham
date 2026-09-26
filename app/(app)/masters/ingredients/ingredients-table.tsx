@@ -12,6 +12,7 @@ import { Dialog } from "@/components/ui/dialog";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { toast } from "@/lib/toast";
 import { Pencil, Trash2 } from "lucide-react";
+import { SearchSelect } from "@/components/ui/search-select";
 
 type Opt = { id: string; name: string; abbr?: string };
 type Item = {
@@ -119,25 +120,16 @@ export function IngredientsTable({ items, categories, units, vendors }: {
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="ei-cat">Category</Label>
-              <select id="ei-cat" className={sel} value={v.category_id} onChange={set("category_id")}>
-                <option value="">—</option>
-                {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </select>
+              <SearchSelect options={categories.map((c) => ({ value: c.id, label: c.name }))} value={v.category_id} onChange={(x) => setV((st) => (st ? { ...st, category_id: x } : st))} id="ei-cat" placeholder="—" emptyLabel="—" />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="ei-uom">UOM <span className="text-destructive">*</span></Label>
-              <select id="ei-uom" className={sel} value={v.base_unit_id} onChange={set("base_unit_id")} aria-required="true">
-                <option value="">—</option>
-                {units.map((u) => <option key={u.id} value={u.id}>{u.name}{u.abbr ? ` (${u.abbr})` : ""}</option>)}
-              </select>
+              <SearchSelect options={units.map((u) => ({ value: u.id, label: `${u.name}${u.abbr ? ` (${u.abbr})` : ""}` }))} value={v.base_unit_id} onChange={(x) => setV((st) => (st ? { ...st, base_unit_id: x } : st))} id="ei-uom" placeholder="—" emptyLabel="—" />
             </div>
             {v.material_type !== "sales" && (
               <div className="space-y-1.5">
                 <Label htmlFor="ei-vendor">Default vendor</Label>
-                <select id="ei-vendor" className={sel} value={v.default_vendor_id} onChange={set("default_vendor_id")}>
-                  <option value="">—</option>
-                  {vendors.map((ve) => <option key={ve.id} value={ve.id}>{ve.name}</option>)}
-                </select>
+                <SearchSelect options={vendors.map((ve) => ({ value: ve.id, label: ve.name }))} value={v.default_vendor_id} onChange={(x) => setV((st) => (st ? { ...st, default_vendor_id: x } : st))} id="ei-vendor" placeholder="—" emptyLabel="—" />
               </div>
             )}
             {(v.material_type === "sales" || v.material_type === "both") && (

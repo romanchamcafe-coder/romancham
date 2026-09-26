@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { inr } from "@/lib/utils";
 import { Trash2 } from "lucide-react";
+import { SearchSelect } from "@/components/ui/search-select";
 
 type Item = { id: string; name: string };
 type Line = { component_id: string; qty: string };
@@ -45,10 +46,7 @@ export function RecipeBuilder({ salesItems, purchaseItems, costMap, recipes }: {
     <Card><CardContent className="space-y-4 pt-6">
       <div className="max-w-sm space-y-1.5">
         <Label>Sales item (the product you sell)</Label>
-        <select value={salesId} onChange={(e) => pickSales(e.target.value)} className={sel}>
-          <option value="">Select a sales item…</option>
-          {salesItems.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-        </select>
+        <SearchSelect options={salesItems.map((s) => ({ value: s.id, label: s.name }))} value={salesId} onChange={(v) => pickSales(v)} placeholder="Select a sales item…" />
       </div>
 
       {salesId && (
@@ -62,10 +60,7 @@ export function RecipeBuilder({ salesItems, purchaseItems, costMap, recipes }: {
                 {lines.map((l, i) => (
                   <tr key={i} className="border-b last:border-0">
                     <td className="p-1.5">
-                      <select value={l.component_id} onChange={(e) => upd(i, { component_id: e.target.value })} className={sel + " min-w-44"}>
-                        <option value="">Select…</option>
-                        {purchaseItems.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-                      </select>
+                      <SearchSelect className="min-w-44" options={purchaseItems.map((p) => ({ value: p.id, label: p.name }))} value={l.component_id} onChange={(v) => upd(i, { component_id: v })} placeholder="Select…" />
                     </td>
                     <td className="p-1.5"><Input className="h-9 w-24" type="number" step="0.0001" value={l.qty} onChange={(e) => upd(i, { qty: e.target.value })} /></td>
                     <td className="p-1.5 text-right tabular-nums">{inr((Number(l.qty) || 0) * (costMap[l.component_id] || 0))}</td>

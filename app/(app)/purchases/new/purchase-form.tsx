@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SelectOrType } from "@/components/ui/select-or-type";
+import { SearchSelect } from "@/components/ui/search-select";
 import { inr } from "@/lib/utils";
 import { Trash2 } from "lucide-react";
 
@@ -64,6 +65,9 @@ export function PurchaseForm({ vendors, ingredients, branches, units, categories
   const measUnits = units.filter((u) => MEAS.has(u.abbr.toLowerCase()));
   const packUnitOptions = measUnits.length ? measUnits : units;
   const unitById = new Map(units.map((u) => [u.id, u]));
+  const vendorOpts = vendors.map((v) => ({ value: v.id, label: v.name }));
+  const productOpts = ingredients.map((x) => ({ value: x.id, label: x.name }));
+  const unitOpts = packUnitOptions.map((u) => ({ value: u.id, label: u.abbr }));
 
   const update = (i: number, patch: Partial<Line>) =>
     setLines((ls) => ls.map((l, idx) => (idx === i ? { ...l, ...patch } : l)));
@@ -142,10 +146,8 @@ export function PurchaseForm({ vendors, ingredients, branches, units, categories
         </div>
         <div className="space-y-1.5">
           <Label>Vendor</Label>
-          <select value={vendorId} onChange={(e) => setVendorId(e.target.value)} className={fieldCls} aria-label="Vendor">
-            <option value="">Select vendor…</option>
-            {vendors.map((v) => <option key={v.id} value={v.id}>{v.name}</option>)}
-          </select>
+          <SearchSelect value={vendorId} onChange={setVendorId} ariaLabel="Vendor" placeholder="Select vendor…"
+            options={vendorOpts} />
         </div>
         <div className="space-y-1.5">
           <Label>Location</Label>
@@ -166,10 +168,8 @@ export function PurchaseForm({ vendors, ingredients, branches, units, categories
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-12 sm:items-end">
                 <div className="col-span-2 space-y-1 sm:col-span-3">
                   <Label className="text-xs">Product</Label>
-                  <select value={l.ingredient_id} onChange={(e) => onProduct(i, e.target.value)} className={fieldCls} aria-label="Product">
-                    <option value="">Select…</option>
-                    {ingredients.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
-                  </select>
+                  <SearchSelect value={l.ingredient_id} onChange={(v) => onProduct(i, v)} ariaLabel="Product" placeholder="Select product…"
+                    options={productOpts} />
                 </div>
                 <div className="space-y-1 sm:col-span-2">
                   <Label className="text-xs">Category</Label>
@@ -183,10 +183,8 @@ export function PurchaseForm({ vendors, ingredients, branches, units, categories
                   <Label className="text-xs">Pack Size</Label>
                   <div className="flex gap-1">
                     <Input className="h-9 w-full" type="number" step="0.0001" min="0" value={l.pack_size} onChange={(e) => update(i, { pack_size: e.target.value })} placeholder="500" aria-label="Pack size value" />
-                    <select value={l.pack_size_unit_id} onChange={(e) => update(i, { pack_size_unit_id: e.target.value })} className={fieldCls + " w-24"} aria-label="Pack size unit">
-                      <option value="">unit</option>
-                      {packUnitOptions.map((u) => <option key={u.id} value={u.id}>{u.abbr}</option>)}
-                    </select>
+                    <SearchSelect className="w-24 shrink-0" value={l.pack_size_unit_id} onChange={(v) => update(i, { pack_size_unit_id: v })}
+                      ariaLabel="Pack size unit" placeholder="unit" options={unitOpts} />
                   </div>
                 </div>
                 <div className="space-y-1 sm:col-span-1">

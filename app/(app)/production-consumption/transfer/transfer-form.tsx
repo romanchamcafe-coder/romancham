@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "@/lib/toast";
 import { allocateFifo } from "@/lib/fifo";
 import { postStockTransfer } from "@/server/actions/pnc";
+import { SearchSelect } from "@/components/ui/search-select";
 
 const sel = "h-12 w-full rounded-md border border-input bg-background px-3 text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary";
 
@@ -57,10 +58,9 @@ export function TransferForm({ items, repeat }: { items: Item[]; repeat: { id: s
         <div className="space-y-4 p-4">
           <div className="space-y-1.5">
             <Label htmlFor="t-item">Product</Label>
-            <select id="t-item" value={id} onChange={(e) => { setId(e.target.value); setQty(""); }} className={sel} aria-label="Product">
-              <option value="">Select a product…</option>
-              {items.filter((i) => i.store > 0).map((i) => <option key={i.id} value={i.id}>{i.name} — {i.store} {i.uom} in store</option>)}
-            </select>
+            <SearchSelect id="t-item" ariaLabel="Product" placeholder="Select a product…" value={id}
+              onChange={(v) => { setId(v); setQty(""); }}
+              options={items.filter((i) => i.store > 0).map((i) => ({ value: i.id, label: `${i.name} — ${i.store} ${i.uom} in store` }))} />
             {item && <p className="text-xs text-muted-foreground">In store: <b>{item.store} {item.uom}</b> · On display: <b>{item.display} {item.uom}</b></p>}
           </div>
 

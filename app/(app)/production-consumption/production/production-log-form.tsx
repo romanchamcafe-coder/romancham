@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "@/lib/toast";
 import { postProductionBatch } from "@/server/actions/pnc";
 import type { PncItem } from "@/server/queries/pnc";
+import { SearchSelect } from "@/components/ui/search-select";
 
 const sel = "h-12 w-full rounded-md border border-input bg-background px-3 text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary";
 
@@ -40,10 +41,7 @@ export function ProductionLogForm({ items }: { items: PncItem[] }) {
       <div className="space-y-4 p-4">
         <div className="space-y-1.5">
           <Label htmlFor="b-item">Finished good</Label>
-          <select id="b-item" value={id} onChange={(e) => setId(e.target.value)} className={sel} aria-label="Finished good">
-            <option value="">Select a product…</option>
-            {items.map((i) => <option key={i.id} value={i.id}>{i.name}{i.components === 0 ? " (no recipe)" : ""}</option>)}
-          </select>
+          <SearchSelect options={items.map((i) => ({ value: i.id, label: `${i.name}${i.components === 0 ? " (no recipe)" : ""}` }))} value={id} onChange={(v) => setId(v)} id="b-item" ariaLabel="Finished good" placeholder="Select a product…" />
           {item && (
             <p className="text-xs text-muted-foreground">
               {item.components > 0 ? `${item.components} ingredient${item.components > 1 ? "s" : ""} in recipe · ` : "No recipe — won't consume raw · "}

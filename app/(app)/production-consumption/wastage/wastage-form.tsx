@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "@/lib/toast";
 import { inr } from "@/lib/utils";
 import { postWastage } from "@/server/actions/pnc";
+import { SearchSelect } from "@/components/ui/search-select";
 
 const sel = "h-12 w-full rounded-md border border-input bg-background px-3 text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary";
 const REASONS: { v: string; l: string }[] = [
@@ -49,10 +50,7 @@ export function WastageForm({ items }: { items: Item[] }) {
         <div className="grid gap-3 sm:grid-cols-2">
           <div className="space-y-1.5">
             <Label htmlFor="w-item">Product</Label>
-            <select id="w-item" value={id} onChange={(e) => setId(e.target.value)} className={sel} aria-label="Product">
-              <option value="">Select a product…</option>
-              {items.map((i) => <option key={i.id} value={i.id}>{i.name}</option>)}
-            </select>
+            <SearchSelect options={items.map((i) => ({ value: i.id, label: i.name }))} value={id} onChange={(v) => setId(v)} id="w-item" ariaLabel="Product" placeholder="Select a product…" />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="w-loc">Location</Label>

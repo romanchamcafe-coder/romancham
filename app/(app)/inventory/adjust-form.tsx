@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog } from "@/components/ui/dialog";
 import { toast } from "@/lib/toast";
+import { SearchSelect } from "@/components/ui/search-select";
 
 type Item = { id: string; name: string };
 const sel = "h-10 w-full rounded-md border border-input bg-background px-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary";
@@ -53,10 +54,7 @@ export function AdjustForm({ items }: { items: Item[] }) {
         <div className="grid gap-3 sm:grid-cols-2">
           <div className="space-y-1.5 sm:col-span-2">
             <Label htmlFor="adj-item">Item</Label>
-            <select id="adj-item" value={ingredientId} onChange={(e) => setIngredientId(e.target.value)} className={sel} aria-label="Item">
-              <option value="">Select…</option>
-              {items.map((i) => <option key={i.id} value={i.id}>{i.name}</option>)}
-            </select>
+            <SearchSelect options={items.map((i) => ({ value: i.id, label: i.name }))} value={ingredientId} onChange={(v) => setIngredientId(v)} id="adj-item" ariaLabel="Item" placeholder="Select…" />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="adj-dir">Direction</Label>

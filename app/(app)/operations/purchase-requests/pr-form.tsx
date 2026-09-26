@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ItemsPicker, type PickRow } from "@/components/ops/items-picker";
 import type { ReqItem } from "@/server/queries/requests";
+import { SearchSelect } from "@/components/ui/search-select";
 
 type Vendor = { id: string; name: string };
 const sel = "h-11 w-full rounded-md border border-input bg-background px-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary";
@@ -40,10 +41,7 @@ export function PRForm({ items, vendors }: { items: ReqItem[]; vendors: Vendor[]
       <div className="mt-3 grid gap-3">
         <div className="space-y-1.5">
           <Label>Vendor <span className="text-xs font-normal text-muted-foreground">(optional)</span></Label>
-          <select value={vendorId} onChange={(e) => setVendorId(e.target.value)} className={sel} aria-label="Vendor">
-            <option value="">— choose vendor —</option>
-            {vendors.map((v) => <option key={v.id} value={v.id}>{v.name}</option>)}
-          </select>
+          <SearchSelect options={vendors.map((v) => ({ value: v.id, label: v.name }))} value={vendorId} onChange={(v) => setVendorId(v)} ariaLabel="Vendor" placeholder="— choose vendor —" />
         </div>
         <div className="space-y-1.5">
           <Label>Note <span className="text-xs font-normal text-muted-foreground">(optional)</span></Label>

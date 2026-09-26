@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "@/lib/toast";
 import { inr } from "@/lib/utils";
 import { submitPhysicalCount } from "@/server/actions/pnc";
+import { SearchSelect } from "@/components/ui/search-select";
 
 const sel = "h-12 w-full rounded-md border border-input bg-background px-3 text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary";
 type Item = { id: string; name: string; uom: string };
@@ -42,10 +43,7 @@ export function CountForm({ items }: { items: Item[] }) {
         <div className="grid gap-3 sm:grid-cols-3">
           <div className="space-y-1.5">
             <Label htmlFor="c-item">Product</Label>
-            <select id="c-item" value={id} onChange={(e) => { setId(e.target.value); setResult(null); }} className={sel} aria-label="Product">
-              <option value="">Select a product…</option>
-              {items.map((i) => <option key={i.id} value={i.id}>{i.name}</option>)}
-            </select>
+            <SearchSelect options={items.map((i) => ({ value: i.id, label: i.name }))} value={id} onChange={(v) => { setId(v); setResult(null); }} id="c-item" ariaLabel="Product" placeholder="Select a product…" />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="c-loc">Location</Label>
