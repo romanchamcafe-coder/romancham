@@ -121,6 +121,58 @@ export async function updatePurchase(id: string, payload: Payload): Promise<Acti
   return { ok: true };
 }
 
+// ---------- Bulk import (Excel / CSV) ----------
+export type ImportBill = Payload & { key: string };
+export type ImportResult = ActionState & {
+  created?: number;
+  skipped?: { key: string; reason: string }[];
+  failed?: { key: string; error: string }[];
+};
+
+export async function importPurchases(bills: ImportBill[]): Promise<ImportResult> {
+  const ctx = await getActiveContext();
+  if (!ctx?.orgId) return { error: "No active organization" };
+  if (!Array.isArray(bills) || bills.length === 0) return { error: "Nothing to import" };
+  if (bills.length > 300) return { error: "Please import at most 300 bills at a time" };
+  const supabase = await createClient();
+
+  // Duplicate guard: same vendor + invoice no + bill date already saved.
+  const withNo = bills.filter((b) => b.bill_no);
+  const existing = new Set<string>();
+  if (withNo.length) {
+    const { data } = await supabase.from("purchases").select("vendor_id, bill_no, bill_date")
+      .eq("org_id", ctx.orgId).in("bill_no", [...new Set(withNo.map((b) => b.bill_no!))]).limit(5000);
+    for (const r of data ?? []) existing.add(`${r.vendor_id}|${String(r.bill_no).trim().toLowerCase()}|${r.bill_date}`);
+  }
+
+  let created = 0;
+  const skipped: { key: string; reason: string }[] = [];
+  const failed: { key: string; error: string }[] = [];
+  for (const b of bills) {
+    const branchId = b.branch_id || ctx.branch?.id;
+    if (!branchId) { failed.push({ key: b.key, error: "No branch selected" }); continue; }
+    if (!b.vendor_id) { failed.push({ key: b.key, error: "Vendor missing" }); continue; }
+    const dupKey = `${b.vendor_id}|${String(b.bill_no ?? "").trim().toLowerCase()}|${b.bill_date}`;
+    if (b.bill_no && existing.has(dupKey)) { skipped.push({ key: b.key, reason: "Already imported (same vendor, invoice no and date)" }); continue; }
+    const items = cleanItems(b.items);
+    const err = validate(items);
+    if (err) { failed.push({ key: b.key, error: err }); continue; }
+    const { error } = await supabase.rpc("post_purchase", {
+      p: {
+        org_id: ctx.orgId, branch_id: branchId, vendor_id: b.vendor_id,
+        payment_mode: b.payment_mode || "credit", bill_no: b.bill_no || null, bill_date: b.bill_date || null,
+        items: toRpcItems(items),
+      },
+    });
+    if (error) failed.push({ key: b.key, error: friendlyPurchaseError(error.message) });
+    else { created++; if (b.bill_no) existing.add(dupKey); }
+  }
+  revalidatePath("/purchases");
+  revalidatePath("/inventory");
+  revalidatePath("/dashboard");
+  return { ok: true, created, skipped, failed };
+}
+
 export async function setPurchasePayment(id: string, status: "paid" | "unpaid"): Promise<ActionState> {
   const ctx = await getActiveContext();
   if (!ctx?.orgId) return { error: "No active organization" };

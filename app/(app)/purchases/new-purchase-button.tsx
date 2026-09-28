@@ -11,5 +11,10 @@ export function NewPurchaseButton({ disabled }: { disabled: boolean }) {
       </Tooltip>
     );
   }
-  return <Link href="/purchases/new"><Button>+ New Purchase</Button></Link>;
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <Link href="/purchases/import"><Button variant="outline">Import from Excel</Button></Link>
+      <Link href="/purchases/new"><Button>+ New Purchase</Button></Link>
+    </div>
+  );
 }
