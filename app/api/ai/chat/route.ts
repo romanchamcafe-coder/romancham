@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getActiveContext } from "@/lib/auth/session";
 import { getIntelligence, monthRange } from "@/server/ai/analytics";
 import { getPncAiFacts } from "@/server/queries/pnc";
+import { getPurchaseAiFacts } from "@/server/ai/purchase-facts";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -22,7 +23,11 @@ export async function POST(req: Request) {
   const range = monthRange();
   const intel = await getIntelligence(ctx.orgId, ctx.branch?.id ?? null, range.from, range.to, range.label);
   let pnc: Awaited<ReturnType<typeof getPncAiFacts>> | null = null;
-  try { pnc = await getPncAiFacts(ctx.orgId, ctx.branch?.id ?? null); } catch { /* non-fatal */ }
+  let purchases: Awaited<ReturnType<typeof getPurchaseAiFacts>> | null = null;
+  await Promise.all([
+    getPncAiFacts(ctx.orgId, ctx.branch?.id ?? null).then((v) => { pnc = v; }).catch(() => {}),
+    getPurchaseAiFacts(ctx.orgId, ctx.branch?.id ?? null).then((v) => { purchases = v; }).catch(() => {}),
+  ]);
 
   const key = process.env.GEMINI_API_KEY;
   if (!key) {
@@ -45,12 +50,14 @@ export async function POST(req: Request) {
     recommendations: intel.recommendations,
     healthScore: intel.health,
     productionAndConsumption: pnc,
+    purchases,
   };
 
   const system = [
     "You are Romancham AI, a restaurant business, finance, food-cost, inventory, procurement, sales and operations analyst for a cafe.",
     "Answer ONLY using the DATA JSON provided in the user message. NEVER invent or guess numbers that are not present in or directly derivable from it.",
-    "If the data is insufficient to answer, reply exactly: \"I don't have enough data to answer this accurately.\"",
+    "Use whatever relevant data IS present: if one area is empty (e.g. no sales yet) but another has data (e.g. purchases), answer fully from the data you have and briefly mention what is missing. Only if NOTHING relevant exists, reply: \"I don't have enough data to answer this accurately.\"",
+    "DATA.purchases covers the last 90 days of purchase bills: totals, month-by-month spend, spend by vendor, by category, top items (quantity, spend, min/max/last rate per base unit), items with the biggest price swings, daily spend, unpaid and petty-cash bills, and recent bills. Use it for any question about purchases, procurement, vendors, suppliers, spend, ingredient prices, payables or cost control. Summaries should highlight where the money went (top vendors/categories/items with % share), price changes, and 2-3 concrete saving actions.",
     "Think like an owner and management consultant: what is happening, why, how much it impacts the business (in rupees), what to do, and what to prioritise.",
     "When you cite a number, include: the value, the period, the % change vs the comparison period if available, the business impact, and one specific recommended action.",
     "Be concise and practical (short paragraphs or tight bullets). Use the rupee symbol for money. Do not recompute totals from scratch - the metrics are already calculated.",
@@ -72,7 +79,7 @@ export async function POST(req: Request) {
   const geminiBody = JSON.stringify({
     system_instruction: { parts: [{ text: system }] },
     contents: [{ role: "user", parts: [{ text: `DATA:\n${JSON.stringify(context)}\n\nQUESTION: ${message}` }] }],
-    generationConfig: { temperature: 0.4, maxOutputTokens: 1500 },
+    generationConfig: { temperature: 0.4, maxOutputTokens: 4096 },
   });
 
   let lastDetail = "";
@@ -85,9 +92,11 @@ export async function POST(req: Request) {
       if (resp.ok) {
         const data: any = await resp.json();
         const parts = data?.candidates?.[0]?.content?.parts ?? [];
-        const reply = parts.filter((p: any) => p && p.text && !p.thought).map((p: any) => p.text).join("").trim()
-          || "I don't have enough data to answer this accurately.";
-        return NextResponse.json({ reply });
+        const reply = parts.filter((p: any) => p && p.text && !p.thought).map((p: any) => p.text).join("").trim();
+        if (reply) return NextResponse.json({ reply });
+        // Empty answer (e.g. the model spent its budget "thinking") — try the next model.
+        lastDetail = `empty reply (${data?.candidates?.[0]?.finishReason ?? "unknown"}) from ${model}`;
+        continue;
       }
       lastDetail = (await resp.text()).slice(0, 400);
       // 404 (model unavailable) or 503/429 (busy) -> try the next model.
