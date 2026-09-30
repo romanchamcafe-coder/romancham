@@ -3,6 +3,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import type { StaffRow, PayRow } from "@/server/queries/attendance";
 import { saveStaff, type StaffInput } from "@/server/actions/attendance";
+import { SHOW_OT } from "@/lib/attendance";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/lib/toast";
@@ -29,7 +30,7 @@ export function StaffManager({ staff, pay, showPay }: { staff: StaffRow[]; pay: 
   function save() {
     if (!form) return;
     const input: StaffInput = { id: form.id, name: form.name, designation: form.designation, phone: form.phone, joined_on: form.joined_on, is_active: form.is_active };
-    if (showPay) { input.monthly_salary = form.monthly_salary; input.ot_rate_per_hour = form.ot_rate_per_hour; }
+    if (showPay) { input.monthly_salary = form.monthly_salary; if (SHOW_OT) input.ot_rate_per_hour = form.ot_rate_per_hour; }
     start(async () => {
       const res = await saveStaff(input);
       if (res.error) toast(res.error, "error");
@@ -54,7 +55,7 @@ export function StaffManager({ staff, pay, showPay }: { staff: StaffRow[]; pay: 
             <label className="space-y-1 text-xs">Joined on<input type="date" className={fld} value={form.joined_on} onChange={set("joined_on")} /></label>
             {showPay && <>
               <label className="space-y-1 text-xs">Monthly salary (₹)<input type="number" min="0" className={fld} value={form.monthly_salary} onChange={set("monthly_salary")} placeholder="e.g. 15000" /></label>
-              <label className="space-y-1 text-xs">OT rate per hour (₹)<input type="number" min="0" className={fld} value={form.ot_rate_per_hour} onChange={set("ot_rate_per_hour")} placeholder="auto = per-day ÷ 8" /></label>
+              {SHOW_OT && <label className="space-y-1 text-xs">OT rate per hour (₹)<input type="number" min="0" className={fld} value={form.ot_rate_per_hour} onChange={set("ot_rate_per_hour")} placeholder="auto = per-day ÷ 8" /></label>}
             </>}
             <label className="flex items-center gap-2 self-end pb-2 text-sm"><input type="checkbox" checked={form.is_active} onChange={set("is_active")} /> Active</label>
           </div>
@@ -68,7 +69,7 @@ export function StaffManager({ staff, pay, showPay }: { staff: StaffRow[]; pay: 
       <Card className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="border-b text-left text-xs text-muted-foreground">
-            <tr><th className="p-2">#</th><th className="p-2">Name</th><th className="p-2">Designation</th><th className="p-2">Phone</th><th className="p-2">Joined</th>{showPay && <><th className="p-2 text-right">Monthly salary</th><th className="p-2 text-right">OT / hr</th></>}<th className="p-2">Status</th><th className="p-2" /></tr>
+            <tr><th className="p-2">#</th><th className="p-2">Name</th><th className="p-2">Designation</th><th className="p-2">Phone</th><th className="p-2">Joined</th>{showPay && <><th className="p-2 text-right">Monthly salary</th>{SHOW_OT && <th className="p-2 text-right">OT / hr</th>}</>}<th className="p-2">Status</th><th className="p-2" /></tr>
           </thead>
           <tbody>
             {staff.map((s, i) => {
@@ -82,7 +83,7 @@ export function StaffManager({ staff, pay, showPay }: { staff: StaffRow[]; pay: 
                   <td className="p-2">{s.joined_on ?? "—"}</td>
                   {showPay && <>
                     <td className="p-2 text-right tabular-nums">{p?.monthly_salary ? inr(p.monthly_salary) : <span className="text-amber-600">not set</span>}</td>
-                    <td className="p-2 text-right tabular-nums">{p?.ot_rate_per_hour != null ? inr(p.ot_rate_per_hour) : "auto"}</td>
+                    {SHOW_OT && <td className="p-2 text-right tabular-nums">{p?.ot_rate_per_hour != null ? inr(p.ot_rate_per_hour) : "auto"}</td>}
                   </>}
                   <td className="p-2">{s.is_active ? <span className="text-green-600">Active</span> : "Inactive"}</td>
                   <td className="p-2 text-right"><button type="button" onClick={() => edit(s)} className="rounded p-1 hover:bg-muted" aria-label={`Edit ${s.name}`}><Pencil className="h-4 w-4" /></button></td>

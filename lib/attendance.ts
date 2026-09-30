@@ -15,6 +15,10 @@ export const isStatus = (s: unknown): s is AttStatus => typeof s === "string" &&
 const PAY_ROLES = new Set(["owner", "admin", "branch_manager", "manager", "accountant", "accounts"]);
 export const canSeePay = (role: string | null | undefined) => PAY_ROLES.has(role ?? "");
 
+// Overtime is switched off for now — flip to true to bring back OT hours,
+// OT rate and OT pay everywhere (data model already supports it).
+export const SHOW_OT = false;
+
 export const SHIFT_HOURS = 8; // used for the automatic hourly OT rate
 
 export function daysInMonth(month: string) { // "YYYY-MM"
@@ -43,7 +47,7 @@ export function computePay(o: { monthly: number; otRate: number | null; days: nu
   const paidDays = ATT_STATUSES.reduce((s, st) => s + o.counts[st.key] * st.pay, 0);
   const hourly = o.otRate != null && o.otRate > 0 ? o.otRate : perDay / SHIFT_HOURS;
   const earned = perDay * paidDays;
-  const otPay = hourly * o.counts.otHours;
+  const otPay = SHOW_OT ? hourly * o.counts.otHours : 0;
   const gross = earned + otPay;
   return { perDay, paidDays, hourly, earned, otPay, gross, advances: o.advances, net: gross - o.advances };
 }

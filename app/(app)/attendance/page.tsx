@@ -32,7 +32,7 @@ export default async function AttendancePage({ searchParams }: { searchParams: P
     <div className="space-y-4">
       <div>
         <h1 className="text-xl font-semibold">Attendance <span className="text-sm font-normal text-muted-foreground">· {ctx!.branch?.name}</span></h1>
-        <p className="text-sm text-muted-foreground">Mark staff attendance daily; the monthly summary {pay ? "works out salary, overtime and advances" : "shows days worked and overtime"} automatically.</p>
+        <p className="text-sm text-muted-foreground">Mark staff attendance daily; the monthly summary {pay ? "works out salary and advances" : "shows days worked"} automatically.</p>
       </div>
       <div className="flex flex-wrap gap-2 border-b pb-2">
         {tabs.map(([k, label]) => (

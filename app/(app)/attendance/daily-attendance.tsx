@@ -2,7 +2,7 @@
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ATT_STATUSES, workedHours, type AttStatus } from "@/lib/attendance";
+import { ATT_STATUSES, SHOW_OT, workedHours, type AttStatus } from "@/lib/attendance";
 import type { StaffRow, AttRow } from "@/server/queries/attendance";
 import { saveDayAttendance } from "@/server/actions/attendance";
 import { Card } from "@/components/ui/card";
@@ -73,7 +73,7 @@ export function DailyAttendance({ date, today, staff, rows }: { date: string; to
       <Card className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="border-b text-left text-xs text-muted-foreground">
-            <tr><th className="p-2">Staff</th><th className="p-2">Status</th><th className="p-2">In</th><th className="p-2">Out</th><th className="p-2 text-right">Worked</th><th className="p-2">OT hrs</th><th className="p-2">Note</th></tr>
+            <tr><th className="p-2">Staff</th><th className="p-2">Status</th><th className="p-2">In</th><th className="p-2">Out</th><th className="p-2 text-right">Worked</th>{SHOW_OT && <th className="p-2">OT hrs</th>}<th className="p-2">Note</th></tr>
           </thead>
           <tbody>
             {staff.map((s) => {
@@ -97,7 +97,7 @@ export function DailyAttendance({ date, today, staff, rows }: { date: string; to
                   <td className="p-2"><input type="time" value={v.in_time} disabled={offDay} onChange={(ev) => set(s.id, { in_time: ev.target.value })} className="h-8 w-28 rounded-md border border-input bg-background px-1 text-sm disabled:opacity-40" aria-label={`${s.name} in time`} /></td>
                   <td className="p-2"><input type="time" value={v.out_time} disabled={offDay} onChange={(ev) => set(s.id, { out_time: ev.target.value })} className="h-8 w-28 rounded-md border border-input bg-background px-1 text-sm disabled:opacity-40" aria-label={`${s.name} out time`} /></td>
                   <td className="p-2 text-right tabular-nums">{wh ? `${wh} h` : "—"}</td>
-                  <td className="p-2"><input type="number" min="0" max="24" step="0.5" value={v.ot_hours} disabled={offDay} onChange={(ev) => set(s.id, { ot_hours: ev.target.value })} className="h-8 w-20 rounded-md border border-input bg-background px-2 text-sm disabled:opacity-40" placeholder="0" aria-label={`${s.name} overtime hours`} /></td>
+                  {SHOW_OT && <td className="p-2"><input type="number" min="0" max="24" step="0.5" value={v.ot_hours} disabled={offDay} onChange={(ev) => set(s.id, { ot_hours: ev.target.value })} className="h-8 w-20 rounded-md border border-input bg-background px-2 text-sm disabled:opacity-40" placeholder="0" aria-label={`${s.name} overtime hours`} /></td>}
                   <td className="p-2"><input value={v.note} onChange={(ev) => set(s.id, { note: ev.target.value })} className="h-8 w-40 rounded-md border border-input bg-background px-2 text-sm" placeholder="optional" aria-label={`${s.name} note`} /></td>
                 </tr>
               );
