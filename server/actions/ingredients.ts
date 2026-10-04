@@ -5,6 +5,9 @@ import { revalidatePath } from "next/cache";
 import type { ActionState } from "@/lib/types";
 
 const orNull = (v: FormDataEntryValue | null) => { const s = String(v ?? "").trim(); return s === "" ? null : s; };
+const TYPES = ["purchase", "sales", "both", "prep"];
+// Usable yield % of a raw item (trim/peel loss). Blank / invalid -> 100.
+const yieldPct = (v: unknown) => { const n = Number(v); return n > 0 && n <= 100 ? n : 100; };
 
 export async function createIngredient(_: ActionState | null, formData: FormData): Promise<ActionState> {
   const ctx = await getActiveContext();
@@ -12,7 +15,7 @@ export async function createIngredient(_: ActionState | null, formData: FormData
   const name = String(formData.get("name") || "").trim();
   if (!name) return { error: "Item name required" };
   const mt = String(formData.get("material_type") || "purchase");
-  const material_type = ["purchase", "sales", "both"].includes(mt) ? mt : "purchase";
+  const material_type = TYPES.includes(mt) ? mt : "purchase";
   const ff = String(formData.get("fulfillment") || "direct");
   const fulfillment = ff === "stock" ? "stock" : "direct";
 
@@ -25,6 +28,7 @@ export async function createIngredient(_: ActionState | null, formData: FormData
     hsn_code: orNull(formData.get("hsn_code")),
     default_gst_rate: Number(formData.get("default_gst_rate")) || 0,
     reorder_level: Number(formData.get("reorder_level")) || 0,
+    yield_pct: yieldPct(formData.get("yield_pct")),
   });
   if (error) return { error: error.message };
   revalidatePath("/masters/ingredients");
@@ -107,6 +111,7 @@ export type IngredientInput = {
   name: string; material_type: string; category_id: string; base_unit_id: string;
   default_vendor_id: string; default_gst_rate: string; reorder_level: string; hsn_code: string;
   fulfillment: string;
+  yield_pct?: string;
 };
 
 export async function updateIngredient(id: string, input: IngredientInput): Promise<ActionState> {
@@ -115,7 +120,7 @@ export async function updateIngredient(id: string, input: IngredientInput): Prom
   const name = (input.name || "").trim();
   if (!name) return { error: "Item name is required" };
   if (!input.base_unit_id) return { error: "Please select a Unit of Measure (UOM)" };
-  const mt = ["purchase", "sales", "both"].includes(input.material_type) ? input.material_type : "purchase";
+  const mt = TYPES.includes(input.material_type) ? input.material_type : "purchase";
   const fulfillment = input.fulfillment === "stock" ? "stock" : "direct";
 
   const supabase = await createClient();
@@ -127,6 +132,7 @@ export async function updateIngredient(id: string, input: IngredientInput): Prom
     hsn_code: (input.hsn_code || "").trim() || null,
     default_gst_rate: Number(input.default_gst_rate) || 0,
     reorder_level: Number(input.reorder_level) || 0,
+    ...(input.yield_pct !== undefined ? { yield_pct: yieldPct(input.yield_pct) } : {}),
   }).eq("id", id).eq("org_id", ctx.orgId);
   if (error) return { error: error.message };
   revalidatePath("/masters/ingredients");

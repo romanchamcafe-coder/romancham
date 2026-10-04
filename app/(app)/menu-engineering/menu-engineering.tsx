@@ -85,7 +85,7 @@ export function MenuEngineering({ items }: { items: MenuItem[] }) {
       {id && (
         <>
           <div className="rounded-lg border bg-muted/40 px-3 py-2 text-sm">
-            Recipe cost (from ingredients): <span className="font-semibold text-foreground">{inr(round2(recipeCost))}</span>
+            Food cost per portion (raw ingredients + preps, from Recipes): <span className="font-semibold text-foreground">{inr(round2(recipeCost))}</span>
             {!item?.hasRecipe && <span className="ml-2 text-amber-600 dark:text-amber-400">— build this item&apos;s recipe first for an accurate cost.</span>}
           </div>
 
@@ -132,6 +132,10 @@ export function MenuEngineering({ items }: { items: MenuItem[] }) {
                   <PriceRow label="Delivery (Swiggy/Zomato)" price={r.deliveryPrice} profit={r.deliveryProfit} />
                 </tbody>
               </table>
+              <div className="flex items-center justify-between border-t px-3 py-2 text-sm">
+                <span>Food cost % (dine-in, ex-GST)</span>
+                <span className="font-semibold tabular-nums">{r.dinePrice > 0 ? `${((recipeCost / (r.dinePrice / (1 + num(inp.gst) / 100))) * 100).toFixed(1)} %` : "—"}</span>
+              </div>
               <p className="px-3 py-2 text-xs text-muted-foreground">Delivery price is grossed up so commission still leaves your target profit.</p>
             </div>
           </div>

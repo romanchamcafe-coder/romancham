@@ -68,6 +68,9 @@ export function IngredientForm({ categories, units, vendors }: { categories: Opt
         )}
         <div className="space-y-1.5"><Label>GST %</Label><Input name="default_gst_rate" type="number" step="0.01" placeholder="5" aria-label="Default GST rate percent" /></div>
         {!isSales && (
+          <div className="space-y-1.5"><Label>Usable yield %</Label><Input name="yield_pct" type="number" min="1" max="100" step="0.1" placeholder="100" aria-label="Usable yield percent after trimming" /></div>
+        )}
+        {!isSales && (
           <div className="space-y-1.5"><Label>Reorder level</Label><Input name="reorder_level" type="number" step="0.0001" placeholder="0" aria-label="Reorder level" /></div>
         )}
         <div className="space-y-1.5"><Label>HSN code</Label><Input name="hsn_code" placeholder="optional" aria-label="HSN code" /></div>

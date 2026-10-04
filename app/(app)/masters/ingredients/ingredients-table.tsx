@@ -18,10 +18,10 @@ type Opt = { id: string; name: string; abbr?: string };
 type Item = {
   id: string; name: string; material_type: string; category_id: string | null;
   base_unit_id: string | null; default_vendor_id: string | null; default_gst_rate: number | null;
-  reorder_level: number | null; hsn_code: string | null; fulfillment: string | null;
+  reorder_level: number | null; hsn_code: string | null; fulfillment: string | null; yield_pct?: number | null;
   category_name: string; uom: string; vendor_name: string;
 };
-const typeLabel: Record<string, string> = { purchase: "Purchase", sales: "Sales", both: "Both" };
+const typeLabel: Record<string, string> = { purchase: "Purchase", sales: "Sales", both: "Both", prep: "Prep" };
 const sel = "h-10 w-full rounded-md border border-input bg-background px-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary";
 
 const toForm = (i: Item): IngredientInput => ({
@@ -31,6 +31,7 @@ const toForm = (i: Item): IngredientInput => ({
   default_gst_rate: String(i.default_gst_rate ?? 0), reorder_level: String(i.reorder_level ?? 0),
   hsn_code: i.hsn_code ?? "",
   fulfillment: i.fulfillment ?? "direct",
+  yield_pct: String(i.yield_pct ?? 100),
 });
 
 export function IngredientsTable({ items, categories, units, vendors }: {
@@ -74,7 +75,8 @@ export function IngredientsTable({ items, categories, units, vendors }: {
                 <TD className="font-medium">{i.name}</TD>
                 <TD>
                   <div className="flex flex-wrap items-center gap-1">
-                    <Badge tone={i.material_type === "sales" ? "green" : i.material_type === "both" ? "amber" : "muted"}>{typeLabel[i.material_type] ?? i.material_type}</Badge>
+                    <Badge tone={i.material_type === "sales" ? "green" : i.material_type === "both" || i.material_type === "prep" ? "amber" : "muted"}>{typeLabel[i.material_type] ?? i.material_type}</Badge>
+                    {i.material_type !== "sales" && i.material_type !== "prep" && i.yield_pct != null && Number(i.yield_pct) < 100 && <Badge tone="muted">{Number(i.yield_pct)}% usable</Badge>}
                     {(i.material_type === "sales" || i.material_type === "both") && i.fulfillment === "stock" && <Badge tone="muted">Made to stock</Badge>}
                   </div>
                 </TD>
@@ -116,6 +118,7 @@ export function IngredientsTable({ items, categories, units, vendors }: {
                 <option value="purchase">Purchase (raw item you buy)</option>
                 <option value="sales">Sales (product you sell)</option>
                 <option value="both">Both</option>
+                {v.material_type === "prep" && <option value="prep">Prep / Component (managed in Recipes)</option>}
               </select>
             </div>
             <div className="space-y-1.5">
@@ -144,6 +147,13 @@ export function IngredientsTable({ items, categories, units, vendors }: {
             <div className="space-y-1.5"><Label htmlFor="ei-gst">GST %</Label><Input id="ei-gst" type="number" step="0.01" value={v.default_gst_rate} onChange={set("default_gst_rate")} /></div>
             {v.material_type !== "sales" && (
               <div className="space-y-1.5"><Label htmlFor="ei-reorder">Reorder level</Label><Input id="ei-reorder" type="number" step="0.0001" value={v.reorder_level} onChange={set("reorder_level")} /></div>
+            )}
+            {(v.material_type === "purchase" || v.material_type === "both") && (
+              <div className="space-y-1.5">
+                <Label htmlFor="ei-yield">Usable yield %</Label>
+                <Input id="ei-yield" type="number" min="1" max="100" step="0.1" value={v.yield_pct ?? "100"} onChange={set("yield_pct")} />
+                <p className="text-xs text-muted-foreground">After trimming/peeling. e.g. 1 kg strawberries → 900 g usable = 90%. Recipe cost & stock use this.</p>
+              </div>
             )}
             <div className="space-y-1.5"><Label htmlFor="ei-hsn">HSN code</Label><Input id="ei-hsn" value={v.hsn_code} onChange={set("hsn_code")} placeholder="optional" /></div>
           </div>

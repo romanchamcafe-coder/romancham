@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import type { ActionState } from "@/lib/types";
 import type { MenuPricing } from "@/server/queries/menu";
 import { computePricing } from "@/lib/menu-pricing";
+import { loadCostBook } from "@/server/queries/costing";
 
 export async function saveMenuPricing(salesItemId: string, p: MenuPricing): Promise<ActionState> {
   const ctx = await getActiveContext();
@@ -42,23 +43,10 @@ export async function importMenuPricing(
   const ctx = await getActiveContext();
   if (!ctx?.orgId) return { error: "No active organization" };
   const supabase = await createClient();
-
-  const [{ data: ings }, { data: recipes }, { data: layers }, { data: vi }] = await Promise.all([
-    supabase.from("ingredients").select("id, name, material_type").eq("org_id", ctx.orgId).eq("is_active", true),
-    supabase.from("item_recipe").select("sales_item_id, component_id, qty").eq("org_id", ctx.orgId),
-    supabase.from("inventory_cost_layers").select("ingredient_id, unit_cost, received_at").eq("org_id", ctx.orgId).order("received_at", { ascending: false }),
-    supabase.from("vendor_ingredients").select("ingredient_id, last_price"),
-  ]);
+  const { data: cd, book } = await loadCostBook(ctx.orgId);
 
   const salesMap = new Map<string, string>();
-  for (const i of ings ?? []) if (i.material_type === "sales" || i.material_type === "both") salesMap.set(String(i.name).trim().toLowerCase(), i.id);
-
-  const costMap = new Map<string, number>();
-  for (const l of layers ?? []) if (!costMap.has(l.ingredient_id)) costMap.set(l.ingredient_id, Number(l.unit_cost) || 0);
-  for (const v of vi ?? []) if (!costMap.has(v.ingredient_id) && v.last_price != null) costMap.set(v.ingredient_id, Number(v.last_price));
-
-  const recipeCostBy = new Map<string, number>();
-  for (const r of recipes ?? []) recipeCostBy.set(r.sales_item_id, (recipeCostBy.get(r.sales_item_id) || 0) + Number(r.qty) * (costMap.get(r.component_id) ?? 0));
+  for (const i of cd.items) if (i.isActive && (i.materialType === "sales" || i.materialType === "both")) salesMap.set(String(i.name).trim().toLowerCase(), i.id);
 
   const N = (v: string) => Number(v) || 0;
   let updated = 0, skipped = 0;
@@ -69,7 +57,7 @@ export async function importMenuPricing(
     if (!name) continue;
     const id = salesMap.get(name.toLowerCase());
     if (!id) { skipped++; continue; }
-    const recipeCost = recipeCostBy.get(id) ?? 0;
+    const recipeCost = book.unitCost(id);
     const r = computePricing({
       recipeCost, packaging: N(row.packaging), wastage: N(row.wastage), labor: N(row.labor),
       utility: N(row.utility), overhead: N(row.overhead), marketing: N(row.marketing),

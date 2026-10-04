@@ -1,39 +1,32 @@
 import { createClient } from "@/lib/supabase/server";
+import { loadCostBook, type CostData } from "@/server/queries/costing";
 
+// Legacy shape used by the CSV export (RecipesIO). Cost now comes from the engine.
 export async function getRecipeData(orgId: string) {
-  const supabase = await createClient();
-  const [{ data: ings }, { data: recipes }, { data: layers }, { data: vi }] = await Promise.all([
-    supabase.from("ingredients").select("id, name, material_type")
-      .eq("org_id", orgId).eq("is_active", true).order("name"),
-    supabase.from("item_recipe").select("sales_item_id, component_id, qty").eq("org_id", orgId),
-    supabase.from("inventory_cost_layers").select("ingredient_id, unit_cost, received_at").eq("org_id", orgId).order("received_at", { ascending: false }),
-    supabase.from("vendor_ingredients").select("ingredient_id, last_price"),
-  ]);
-
-  const salesItems = (ings ?? []).filter((i) => i.material_type === "sales" || i.material_type === "both").map((i) => ({ id: i.id, name: i.name }));
-  const purchaseItems = (ings ?? []).filter((i) => i.material_type === "purchase" || i.material_type === "both").map((i) => ({ id: i.id, name: i.name }));
-  const nameMap = new Map((ings ?? []).map((i) => [i.id, i.name]));
-
-  // latest unit cost per component
-  const costMap = new Map<string, number>();
-  for (const l of layers ?? []) if (!costMap.has(l.ingredient_id)) costMap.set(l.ingredient_id, Number(l.unit_cost) || 0);
-  for (const v of vi ?? []) if (!costMap.has(v.ingredient_id) && v.last_price != null) costMap.set(v.ingredient_id, Number(v.last_price));
-
-  // components grouped by sales item
-  const bySales = new Map<string, { component_id: string; qty: number }[]>();
-  for (const r of recipes ?? []) {
-    const arr = bySales.get(r.sales_item_id) ?? [];
-    arr.push({ component_id: r.component_id, qty: Number(r.qty) });
-    bySales.set(r.sales_item_id, arr);
-  }
-
+  const { data, book } = await loadCostBook(orgId);
+  const active = data.items.filter((i) => i.isActive);
+  const salesItems = active.filter((i) => i.materialType === "sales" || i.materialType === "both").map((i) => ({ id: i.id, name: i.name }));
+  const purchaseItems = active.filter((i) => i.materialType === "purchase" || i.materialType === "both").map((i) => ({ id: i.id, name: i.name }));
+  const nameMap = new Map(data.items.map((i) => [i.id, i.name]));
   const recipeList = salesItems.map((s) => {
-    const comps = (bySales.get(s.id) ?? []).map((c) => ({
-      component_id: c.component_id, name: nameMap.get(c.component_id) ?? "—", qty: c.qty, cost: costMap.get(c.component_id) ?? 0,
-    }));
-    const total = comps.reduce((sum, c) => sum + c.qty * c.cost, 0);
-    return { id: s.id, name: s.name, components: comps, cost: total };
+    const comps = book.lines(s.id).map((l) => ({ component_id: l.componentId, name: nameMap.get(l.componentId) ?? "—", qty: l.qty, cost: book.unitCost(l.componentId) }));
+    return { id: s.id, name: s.name, components: comps, cost: book.unitCost(s.id) };
   });
+  return { salesItems, purchaseItems, recipeList };
+}
 
-  return { salesItems, purchaseItems, costMap: Object.fromEntries(costMap), recipeList };
+export type DishPrice = { dinePrice: number; gstPct: number };
+
+// Everything the Recipes workspace needs (serialisable → the client builds the
+// same CostBook for live what-if editing before saving).
+export async function getRecipeWorkspace(orgId: string): Promise<{ data: CostData; prices: Record<string, DishPrice>; categories: { id: string; name: string }[] }> {
+  const supabase = await createClient();
+  const [{ data }, { data: pricing }, { data: cats }] = await Promise.all([
+    loadCostBook(orgId),
+    supabase.from("menu_pricing").select("sales_item_id, dine_price, gst_pct").eq("org_id", orgId),
+    supabase.from("categories").select("id, name").eq("org_id", orgId).eq("is_active", true).order("name"),
+  ]);
+  const prices: Record<string, DishPrice> = {};
+  for (const p of pricing ?? []) prices[p.sales_item_id] = { dinePrice: Number(p.dine_price) || 0, gstPct: Number(p.gst_pct) || 0 };
+  return { data, prices, categories: cats ?? [] };
 }
