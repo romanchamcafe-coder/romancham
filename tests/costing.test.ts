@@ -191,6 +191,20 @@ test("15. menu engineering integration — pricing built on the engine's food co
   close(r.dinePrice, r.dineCost * 1.4 * 1.05);
 });
 
+test("16. items bought per pack: recipe in grams via pack content (1 qty = 400 gms)", () => {
+  const qty: CostUnit = { id: "u_qty", abbr: "qty" };
+  const pack: CostItem = { id: "epiPack", name: "Epigamia (pack)", kind: "raw", baseUnitId: qty.id, purchaseUnitCost: 120, contentQty: 400, contentUnitId: U.g.id };
+  const items = [pack, PREP("wy2", "WY from packs", U.g)];
+  const um = new Map([...units, qty].map((u) => [u.id, u]));
+  const n = normaliseLines("wy2", 400, [{ componentId: "epiPack", entryQty: 400, entryUnitId: U.g.id }], new Map(items.map((i) => [i.id, i])), um);
+  assert.deepEqual(n.errors, []);
+  close(n.lines[0].qty, 1 / 400);                      // 1 pack per 400 g output
+  const book = new CostBook({ items, units: [...units, qty], headers: [{ itemId: "wy2", type: "prep", yieldQty: 400 }], lines: n.lines });
+  close(book.unitCost("wy2"), 120 / 400);              // ₹0.30 per g
+  const noContent = normaliseLines("wy2", 400, [{ componentId: "epiPack", entryQty: 1, entryUnitId: U.ml.id }], new Map(items.map((i) => [i.id, i])), um);
+  assert.equal(noContent.lines.length, 0);             // ml can't map to a gram-content pack
+});
+
 test("print the Whipped Yoghurt Bowl calculation", () => {
   const { book } = build();
   const out: string[] = [];

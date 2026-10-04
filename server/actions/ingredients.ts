@@ -8,6 +8,11 @@ const orNull = (v: FormDataEntryValue | null) => { const s = String(v ?? "").tri
 const TYPES = ["purchase", "sales", "both", "prep"];
 // Usable yield % of a raw item (trim/peel loss). Blank / invalid -> 100.
 const yieldPct = (v: unknown) => { const n = Number(v); return n > 0 && n <= 100 ? n : 100; };
+// "1 base unit contains N <unit>" (e.g. 1 qty = 400 gms). Blank clears it.
+const packContent = (q: unknown, u: unknown) => {
+  const n = Number(q); const unit = String(u ?? "").trim();
+  return n > 0 && unit ? { pack_content_qty: n, pack_content_unit_id: unit } : { pack_content_qty: null, pack_content_unit_id: null };
+};
 
 export async function createIngredient(_: ActionState | null, formData: FormData): Promise<ActionState> {
   const ctx = await getActiveContext();
@@ -29,6 +34,7 @@ export async function createIngredient(_: ActionState | null, formData: FormData
     default_gst_rate: Number(formData.get("default_gst_rate")) || 0,
     reorder_level: Number(formData.get("reorder_level")) || 0,
     yield_pct: yieldPct(formData.get("yield_pct")),
+    ...packContent(formData.get("pack_content_qty"), formData.get("pack_content_unit_id")),
   });
   if (error) return { error: error.message };
   revalidatePath("/masters/ingredients");
@@ -112,6 +118,7 @@ export type IngredientInput = {
   default_vendor_id: string; default_gst_rate: string; reorder_level: string; hsn_code: string;
   fulfillment: string;
   yield_pct?: string;
+  pack_content_qty?: string; pack_content_unit_id?: string;
 };
 
 export async function updateIngredient(id: string, input: IngredientInput): Promise<ActionState> {
@@ -133,6 +140,7 @@ export async function updateIngredient(id: string, input: IngredientInput): Prom
     default_gst_rate: Number(input.default_gst_rate) || 0,
     reorder_level: Number(input.reorder_level) || 0,
     ...(input.yield_pct !== undefined ? { yield_pct: yieldPct(input.yield_pct) } : {}),
+    ...(input.pack_content_qty !== undefined ? packContent(input.pack_content_qty, input.pack_content_unit_id) : {}),
   }).eq("id", id).eq("org_id", ctx.orgId);
   if (error) return { error: error.message };
   revalidatePath("/masters/ingredients");

@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { CostBook, convertQty, normaliseLines, unitInfo, foodCostPct, type Breakdown, type CostUnit, type RecipeLine } from "@/lib/costing";
+import { CostBook, convertForItem, compatibleUnits, normaliseLines, unitInfo, foodCostPct, type Breakdown, type CostUnit, type RecipeLine } from "@/lib/costing";
 import type { CostData } from "@/server/queries/costing";
 import type { DishPrice } from "@/server/queries/recipes";
 import { saveRecipeV2, createPrep, clearRecipe } from "@/server/actions/recipes";
@@ -56,7 +56,7 @@ export function RecipeWorkspace({ data, prices, categories, initialTab }: {
     const lines = book.lines(id).map((l): EditLine => {
       const c = itemBy.get(l.componentId);
       const entryUnit = g(l.entryUnitId) ?? g(c?.baseUnitId);
-      const qty = l.entryQty ?? convertQty(l.qty * y, g(c?.baseUnitId), entryUnit) ?? l.qty * y;
+      const qty = l.entryQty ?? convertForItem(l.qty * y, g(c?.baseUnitId), entryUnit, c, unitBy) ?? l.qty * y;
       return { kind: c?.kind === "prep" ? "prep" : "raw", componentId: l.componentId, qty: qfmt(qty), unitId: entryUnit?.id ?? "" };
     });
     setEd({ yieldQty: h ? qfmt(y) : tab === "dish" ? "1" : "", notes: h?.notes ?? "", shelf: h?.shelfLifeDays ? String(h.shelfLifeDays) : "", storage: "", lines: lines.length ? lines : [blankLine()] });
@@ -90,7 +90,8 @@ export function RecipeWorkspace({ data, prices, categories, initialTab }: {
   let inputTotal: number | null = 0;
   if (ed) for (const l of ed.lines) {
     if (!l.componentId || !(Number(l.qty) > 0)) continue;
-    const v = convertQty(Number(l.qty), g(l.unitId) ?? g(itemBy.get(l.componentId)?.baseUnitId), selUnit);
+    const cItem = itemBy.get(l.componentId);
+    const v = convertForItem(Number(l.qty), g(l.unitId) ?? g(cItem?.baseUnitId), selUnit, cItem, unitBy);
     if (v == null) { inputTotal = null; break; }
     inputTotal += v;
   }
@@ -129,12 +130,7 @@ export function RecipeWorkspace({ data, prices, categories, initialTab }: {
     });
   }
 
-  const compatUnits = (componentId: string): CostUnit[] => {
-    const base = g(itemBy.get(componentId)?.baseUnitId);
-    if (!base) return units;
-    const fam = unitInfo(base).family;
-    return units.filter((u) => unitInfo(u).family === fam);
-  };
+  const compatUnits = (componentId: string): CostUnit[] => compatibleUnits(itemBy.get(componentId), units);
   const defaultUnit = (componentId: string) => itemBy.get(componentId)?.baseUnitId ?? "";
 
   // ---------------- render ----------------
@@ -216,7 +212,8 @@ export function RecipeWorkspace({ data, prices, categories, initialTab }: {
                     const c = itemBy.get(l.componentId);
                     const cu = g(c?.baseUnitId);
                     const uc = l.componentId && live ? live.book.unitCost(l.componentId) : 0;
-                    const baseQ = l.componentId ? convertQty(Number(l.qty) || 0, g(l.unitId) ?? cu, cu) : null;
+                    const baseQ = l.componentId ? convertForItem(Number(l.qty) || 0, g(l.unitId) ?? cu, cu, c, unitBy) : null;
+                    const contentU = g(c?.contentUnitId);
                     const err = lineErr(i);
                     const opts = (l.kind === "prep" ? preps.filter((p) => p.id !== selected) : raws).map((x) => ({ value: x.id, label: x.name }));
                     const noPrice = c && c.kind === "raw" && !(c.purchaseUnitCost && c.purchaseUnitCost > 0);
@@ -235,6 +232,7 @@ export function RecipeWorkspace({ data, prices, categories, initialTab }: {
                           {err && <p className="mt-1 text-xs text-destructive">{err}</p>}
                           {noPrice && <p className="mt-1 flex items-center gap-1 text-xs text-amber-600"><AlertTriangle className="h-3 w-3" /> No purchase price yet — record a purchase for this item.</p>}
                           {c && c.kind === "raw" && c.yieldPct != null && c.yieldPct < 100 && <p className="mt-1 text-xs text-muted-foreground">{c.yieldPct}% usable — cost adjusted</p>}
+                          {c && c.kind === "raw" && unitInfo(cu).family === "count" && !(Number(c.contentQty) > 0) && <p className="mt-1 text-xs text-amber-600">Bought per {cu?.abbr}. To use grams/ml here, set its pack size in Ingredients (e.g. 1 {cu?.abbr} = 400 gms).</p>}
                         </td>
                         <td className="p-1.5"><Input className="h-9" type="number" min="0" step="0.001" value={l.qty} onChange={(e) => updLine(i, { qty: e.target.value })} /></td>
                         <td className="p-1.5">
@@ -242,7 +240,7 @@ export function RecipeWorkspace({ data, prices, categories, initialTab }: {
                             {(l.componentId ? compatUnits(l.componentId) : units).map((u) => <option key={u.id} value={u.id}>{u.abbr}</option>)}
                           </select>
                         </td>
-                        <td className="p-1.5 text-right tabular-nums text-muted-foreground">{l.componentId ? `${rate(uc)}/${cu?.abbr ?? "unit"}` : "—"}</td>
+                        <td className="p-1.5 text-right tabular-nums text-muted-foreground">{l.componentId ? <>{rate(uc)}/{cu?.abbr ?? "unit"}{contentU && Number(c?.contentQty) > 0 && <div className="text-xs">= {rate(uc / Number(c!.contentQty))}/{contentU.abbr}</div>}</> : "—"}</td>
                         <td className="p-1.5 text-right font-medium tabular-nums">{baseQ != null && l.componentId ? rs(baseQ * uc) : "—"}</td>
                         <td className="p-1.5 text-center">{ed.lines.length > 1 && <button type="button" onClick={() => { setEd({ ...ed, lines: ed.lines.filter((_, k) => k !== i) }); setDirty(true); }} className="text-muted-foreground hover:text-destructive" aria-label="Remove line"><Trash2 className="h-4 w-4" /></button>}</td>
                       </tr>

@@ -18,7 +18,7 @@ type Opt = { id: string; name: string; abbr?: string };
 type Item = {
   id: string; name: string; material_type: string; category_id: string | null;
   base_unit_id: string | null; default_vendor_id: string | null; default_gst_rate: number | null;
-  reorder_level: number | null; hsn_code: string | null; fulfillment: string | null; yield_pct?: number | null;
+  reorder_level: number | null; hsn_code: string | null; fulfillment: string | null; yield_pct?: number | null; pack_content_qty?: number | null; pack_content_unit_id?: string | null;
   category_name: string; uom: string; vendor_name: string;
 };
 const typeLabel: Record<string, string> = { purchase: "Purchase", sales: "Sales", both: "Both", prep: "Prep" };
@@ -32,6 +32,8 @@ const toForm = (i: Item): IngredientInput => ({
   hsn_code: i.hsn_code ?? "",
   fulfillment: i.fulfillment ?? "direct",
   yield_pct: String(i.yield_pct ?? 100),
+  pack_content_qty: i.pack_content_qty != null ? String(i.pack_content_qty) : "",
+  pack_content_unit_id: i.pack_content_unit_id ?? "",
 });
 
 export function IngredientsTable({ items, categories, units, vendors }: {
@@ -153,6 +155,20 @@ export function IngredientsTable({ items, categories, units, vendors }: {
                 <Label htmlFor="ei-yield">Usable yield %</Label>
                 <Input id="ei-yield" type="number" min="1" max="100" step="0.1" value={v.yield_pct ?? "100"} onChange={set("yield_pct")} />
                 <p className="text-xs text-muted-foreground">After trimming/peeling. e.g. 1 kg strawberries → 900 g usable = 90%. Recipe cost & stock use this.</p>
+              </div>
+            )}
+            {(v.material_type === "purchase" || v.material_type === "both") && (
+              <div className="space-y-1.5">
+                <Label htmlFor="ei-pack">Pack size (for recipes)</Label>
+                <div className="flex items-center gap-2 text-sm">
+                  <span className="shrink-0">1 {units.find((u) => u.id === v.base_unit_id)?.abbr ?? "unit"} =</span>
+                  <Input id="ei-pack" type="number" min="0" step="0.01" className="w-24" value={v.pack_content_qty ?? ""} onChange={set("pack_content_qty")} placeholder="400" />
+                  <select className={sel + " w-24"} value={v.pack_content_unit_id ?? ""} onChange={set("pack_content_unit_id")} aria-label="Pack content unit">
+                    <option value="">unit</option>
+                    {units.map((u) => <option key={u.id} value={u.id}>{u.abbr ?? u.name}</option>)}
+                  </select>
+                </div>
+                <p className="text-xs text-muted-foreground">Only if you buy it per pack/qty but use grams/ml in recipes (e.g. 1 tub = 400 gms).</p>
               </div>
             )}
             <div className="space-y-1.5"><Label htmlFor="ei-hsn">HSN code</Label><Input id="ei-hsn" value={v.hsn_code} onChange={set("hsn_code")} placeholder="optional" /></div>

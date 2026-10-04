@@ -29,6 +29,9 @@ export type CostItem = {
   purchaseUnitCost?: number;
   /** Usable yield after trimming/peeling, 1–100 (raw items only). Default 100. */
   yieldPct?: number | null;
+  /** Pack content: ONE base unit contains `contentQty` of `contentUnitId`
+   *  (e.g. base "qty"/pack, 1 pack = 400 gms). Lets recipes use grams for items bought per pack. */
+  contentQty?: number | null; contentUnitId?: string | null;
 };
 export type RecipeHeader = { itemId: string; type: "prep" | "dish"; yieldQty: number; notes?: string | null; shelfLifeDays?: number | null };
 export type RecipeLine = {
@@ -62,6 +65,36 @@ export function convertQty(qty: number, from: CostUnit | null | undefined, to: C
   const a = unitInfo(from), b = unitInfo(to);
   if (a.family !== b.family) return null;
   return (qty * a.factor) / b.factor;
+}
+
+/**
+ * Convert a quantity of a specific ITEM between units, also across the item's
+ * pack content (e.g. Epigamia: 1 qty = 400 gms → 100 gms = 0.25 qty).
+ */
+export function convertForItem(qty: number, from: CostUnit | null | undefined, to: CostUnit | null | undefined, item: CostItem | undefined, units: Map<string, CostUnit>): number | null {
+  const direct = convertQty(qty, from, to);
+  if (direct != null) return direct;
+  if (!item || !(Number(item.contentQty) > 0) || !item.contentUnitId) return null;
+  const base = item.baseUnitId ? units.get(item.baseUnitId) : undefined;
+  const content = units.get(item.contentUnitId);
+  if (!base || !content) return null;
+  const n = Number(item.contentQty);
+  // from content-family → base-family
+  const inContent = convertQty(qty, from, content);
+  if (inContent != null) { const inBase = inContent / n; return convertQty(inBase, base, to); }
+  // from base-family → content-family
+  const inBase = convertQty(qty, from, base);
+  if (inBase != null) return convertQty(inBase * n, content, to);
+  return null;
+}
+
+/** Units a recipe line for this item may be entered in (base family + pack-content family). */
+export function compatibleUnits(item: CostItem | undefined, units: CostUnit[]): CostUnit[] {
+  if (!item?.baseUnitId) return units;
+  const map = new Map(units.map((u) => [u.id, u]));
+  const fams = new Set([unitInfo(map.get(item.baseUnitId)).family]);
+  if (item.contentUnitId && Number(item.contentQty) > 0) fams.add(unitInfo(map.get(item.contentUnitId)).family);
+  return units.filter((u) => fams.has(unitInfo(u).family));
 }
 
 // ---------- errors ----------
@@ -163,7 +196,7 @@ export class CostBook {
       let sum = 0, ok = true;
       for (const l of lines) {
         const c = this.items.get(l.componentId);
-        const v = convertQty(l.qty * yieldQty, this.unit(c?.baseUnitId), base);
+        const v = convertForItem(l.qty * yieldQty, this.unit(c?.baseUnitId), base, c, this.units);
         if (v == null) { ok = false; break; }
         sum += v;
       }
@@ -189,7 +222,7 @@ export class CostBook {
       const baseQty = l.qty * s;
       const cBase = this.unit(c?.baseUnitId);
       const entryUnit = this.unit(l.entryUnitId);
-      const shown = entryUnit && depth === 0 && scale === undefined ? convertQty(baseQty, cBase, entryUnit) : null;
+      const shown = entryUnit && depth === 0 && scale === undefined ? convertForItem(baseQty, cBase, entryUnit, c, this.units) : null;
       const uc = this.unitCost(l.componentId);
       const hasKids = (this.linesBy.get(l.componentId) ?? []).length > 0;
       return {
@@ -248,9 +281,9 @@ export function normaliseLines(
     if (!c) { errors.push({ index, message: "Item not found" }); return; }
     const to = c.baseUnitId ? units.get(c.baseUnitId) : undefined;
     const from = e.entryUnitId ? units.get(e.entryUnitId) : to;
-    const base = convertQty(q, from, to);
+    const base = convertForItem(q, from, to, c, units);
     if (base == null) {
-      errors.push({ index, message: `${c.name} is measured in ${to?.abbr ?? "its own unit"} — "${from?.abbr}" can't be converted` });
+      errors.push({ index, message: `${c.name} is measured in ${to?.abbr ?? "its own unit"} — "${from?.abbr}" can't be converted. Set its pack size (1 ${to?.abbr ?? "unit"} = ? ${from?.abbr}) in Ingredients.` });
       return;
     }
     lines.push({ parentId, componentId: e.componentId, qty: base / yieldQty, entryQty: q, entryUnitId: from?.id ?? null, sortOrder: index });

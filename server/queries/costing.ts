@@ -15,7 +15,7 @@ export type CostData = {
 export async function loadCostData(orgId: string): Promise<CostData> {
   const supabase = await createClient();
   const [{ data: ings }, { data: units }, { data: heads }, { data: recs }, { data: layers }, { data: vi }] = await Promise.all([
-    supabase.from("ingredients").select("id, name, material_type, base_unit_id, category_id, yield_pct, is_active").eq("org_id", orgId),
+    supabase.from("ingredients").select("id, name, material_type, base_unit_id, category_id, yield_pct, is_active, pack_content_qty, pack_content_unit_id").eq("org_id", orgId),
     supabase.from("units").select("id, name, abbr, factor_to_base").eq("org_id", orgId).order("name"),
     supabase.from("recipe_header").select("item_id, recipe_type, yield_qty, notes, shelf_life_days").eq("org_id", orgId),
     supabase.from("item_recipe").select("sales_item_id, component_id, qty, entry_qty, entry_unit_id, sort_order").eq("org_id", orgId),
@@ -40,6 +40,7 @@ export async function loadCostData(orgId: string): Promise<CostData> {
     return {
       id: i.id, name: i.name, kind, baseUnitId: i.base_unit_id, purchaseUnitCost: cost.get(i.id) ?? 0,
       yieldPct: i.yield_pct == null ? 100 : Number(i.yield_pct),
+      contentQty: i.pack_content_qty == null ? null : Number(i.pack_content_qty), contentUnitId: i.pack_content_unit_id ?? null,
       materialType: i.material_type, categoryId: i.category_id, isActive: i.is_active !== false,
     };
   });
