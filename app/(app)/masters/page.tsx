@@ -6,7 +6,8 @@ import { createClient } from "@/lib/supabase/server";
 import { getIngredientCosts } from "@/server/queries/ingredient-costs";
 import { getMastersOverview } from "@/server/queries/masters-overview";
 import { OverviewTable, type Col } from "./overview-table";
-import { CostTable } from "./cost-table";
+import { CostTable, type PackUnit } from "./cost-table";
+import { unitInfo } from "@/lib/costing";
 import { cn } from "@/lib/utils";
 import { Ruler, Tags, Boxes, Store, IndianRupee } from "lucide-react";
 
@@ -37,7 +38,7 @@ export default async function MastersPage({ searchParams }: { searchParams: Prom
     <div className="space-y-4">
       <div>
         <h1 className="text-xl font-semibold">Masters</h1>
-        <p className="text-sm text-muted-foreground">View-only overview of your master data. To add or edit, use Units, Categories, Ingredients or Vendors in the menu.</p>
+        <p className="text-sm text-muted-foreground">Overview of your master data (tabs 1–4 are view-only — edit them from the menu). Tab 5 lets you edit pack size and usable % to get per-g / per-kg cost.</p>
       </div>
       <div className="flex flex-wrap gap-2 border-b pb-2">
         {TABS.map(({ key, label, icon: Icon, n }, i) => (
@@ -60,9 +61,17 @@ export default async function MastersPage({ searchParams }: { searchParams: Prom
 
 async function CostsTab({ orgId }: { orgId: string }) {
   const sb = await createClient();
-  const [rows, { data: cats }] = await Promise.all([
+  const [rows, { data: cats }, { data: units }] = await Promise.all([
     getIngredientCosts(orgId),
     sb.from("categories").select("id, name").eq("org_id", orgId),
+    sb.from("units").select("id, abbr").eq("org_id", orgId).order("abbr"),
   ]);
-  return <CostTable rows={rows} categories={cats ?? []} />;
+  // Units a pack size can be expressed in: weight and volume only (gms, kg, ml, lts…).
+  const packUnits: PackUnit[] = [];
+  for (const u of units ?? []) {
+    const info = unitInfo({ id: u.id, abbr: u.abbr });
+    if (info.family === "mass" || info.family === "volume") packUnits.push({ id: u.id, abbr: u.abbr, family: info.family, factor: info.factor });
+  }
+  packUnits.sort((a, b) => a.family.localeCompare(b.family) || a.factor - b.factor);
+  return <CostTable rows={rows} categories={cats ?? []} packUnits={packUnits} />;
 }

@@ -172,3 +172,23 @@ export async function restoreIngredient(id: string): Promise<ActionState> {
   revalidatePath("/purchases/new");
   return { ok: true };
 }
+
+// Masters → Ingredient cost: quick edit of the fields that drive per-g / per-kg cost.
+export async function updateIngredientCosting(id: string, input: { yieldPct: string | number; packQty: string | number; packUnitId: string }): Promise<ActionState> {
+  const ctx = await getActiveContext();
+  if (!ctx?.orgId) return { error: "No active organization" };
+  const y = Number(input.yieldPct);
+  if (!(y > 0 && y <= 100)) return { error: "Usable % must be between 1 and 100" };
+  const q = String(input.packQty ?? "").trim() === "" ? null : Number(input.packQty);
+  if (q != null && !(q > 0)) return { error: "Pack size must be more than 0 (or leave it blank)" };
+  if (q != null && !input.packUnitId) return { error: "Choose the pack size unit (gms, kg, ml, lts…)" };
+  const supabase = await createClient();
+  const { data, error } = await supabase.from("ingredients").update({
+    yield_pct: y,
+    pack_content_qty: q, pack_content_unit_id: q != null ? input.packUnitId : null,
+  }).eq("id", id).eq("org_id", ctx.orgId).select("id");
+  if (error) return { error: error.message };
+  if (!data?.length) return { error: "Couldn't update — you may not have permission" };
+  revalidatePath("/masters"); revalidatePath("/masters/ingredients"); revalidatePath("/recipes"); revalidatePath("/menu-engineering");
+  return { ok: true };
+}

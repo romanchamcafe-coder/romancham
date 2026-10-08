@@ -4,6 +4,7 @@ import { convertForItem, unitInfo, type CostUnit } from "@/lib/costing";
 export type IngredientCostRow = {
   id: string; name: string; kind: "raw" | "prep"; categoryId: string | null;
   baseUnit: string; packNote: string | null;
+  packQty: number | null; packUnitId: string | null;
   purchaseCost: number;          // per base unit, as bought (raw) / cost per base unit (prep)
   yieldPct: number;
   usableCost: number;            // per base unit after yield %
@@ -41,6 +42,7 @@ export async function getIngredientCosts(orgId: string): Promise<IngredientCostR
       id: it.id, name: it.name, kind: isPrep ? "prep" : "raw", categoryId: it.categoryId,
       baseUnit: base?.abbr ?? "—",
       packNote: it.contentQty && content ? `1 ${base?.abbr ?? "unit"} = ${it.contentQty} ${content.abbr}` : null,
+      packQty: it.contentQty ?? null, packUnitId: it.contentUnitId ?? null,
       purchaseCost: isPrep ? usable : Number(it.purchaseUnitCost) || 0,
       yieldPct: it.yieldPct ?? 100,
       usableCost: usable, measure, perSmall,
