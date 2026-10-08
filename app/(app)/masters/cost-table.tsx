@@ -37,8 +37,22 @@ export function CostTable({ rows, categories }: { rows: IngredientCostRow[]; cat
     const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "romancham-ingredient-costs.csv"; a.click();
   }
 
+  const raw = rows.filter((r) => r.kind === "raw").length;
+  const card = (label: string, n: number, strong = false) => (
+    <div className={cn("rounded-lg border px-4 py-2", strong && "bg-primary/5")}>
+      <p className="text-xs text-muted-foreground">{label}</p>
+      <p className={cn("tabular-nums", strong ? "text-2xl font-bold text-primary" : "text-lg font-semibold")}>{n}</p>
+    </div>
+  );
   return (
     <div className="space-y-3">
+      <div className="flex flex-wrap items-center gap-3">
+        {card("Total items", rows.length, true)}
+        {card("Raw ingredients", raw)}
+        {card("Preps", rows.length - raw)}
+        {card("Cost per g / kg ready", rows.length - missing)}
+        {card("Needs attention", missing)}
+      </div>
       <div className="flex flex-wrap items-center gap-2">
         <div className="relative w-64">
           <Search className="pointer-events-none absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
