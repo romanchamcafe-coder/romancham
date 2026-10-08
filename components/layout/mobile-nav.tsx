@@ -28,8 +28,8 @@ export function MobileNav({ role }: { role?: string | null }) {
           <Image src="/logo.png" alt="Romancham" width={107} height={28} className="h-7 w-auto" />
         </div>
         <nav aria-label="Primary" className="space-y-1 p-2">
-          {items.map(({ href, label, icon: Icon }) => {
-            const active = path === href || path.startsWith(href + "/");
+          {items.map(({ href, label, icon: Icon, exact }) => {
+            const active = path === href || (!exact && path.startsWith(href + "/"));
             return (
               <Link
                 key={href}

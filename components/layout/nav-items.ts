@@ -1,8 +1,8 @@
 import {
-  LayoutDashboard, ClipboardCheck, Boxes, Store, Tags, Ruler, ChefHat, ShoppingCart, IndianRupee, Package, Receipt, Settings, ScrollText, BarChart3, Plug, Sparkles, Calculator, Warehouse, CalendarCheck,
+  LayoutDashboard, ClipboardCheck, Boxes, Store, Tags, Ruler, ChefHat, ShoppingCart, IndianRupee, Package, Receipt, Settings, ScrollText, BarChart3, Plug, Sparkles, Calculator, Warehouse, CalendarCheck, Database,
 } from "lucide-react";
 
-export const NAV = [
+export const NAV: { href: string; label: string; icon: typeof LayoutDashboard; exact?: boolean }[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/ai", label: "AI Analyst", icon: Sparkles },
   { href: "/reports", label: "Reports", icon: BarChart3 },
@@ -19,6 +19,7 @@ export const NAV = [
   { href: "/masters/ingredients", label: "Ingredients", icon: Boxes },
   { href: "/masters/categories", label: "Categories", icon: Tags },
   { href: "/masters/units", label: "Units (UOM)", icon: Ruler },
+  { href: "/masters", label: "Masters", icon: Database, exact: true },
   { href: "/pos", label: "POS Connectors", icon: Plug },
   { href: "/activity", label: "Activity Log", icon: ScrollText },
   { href: "/settings/team", label: "Settings", icon: Settings },
