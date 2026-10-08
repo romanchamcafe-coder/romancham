@@ -10,7 +10,9 @@ import { Download, Search } from "lucide-react";
 
 const money = (n: number | null, dp = 2) => (n == null ? "—" : "₹" + n.toLocaleString("en-IN", { minimumFractionDigits: dp, maximumFractionDigits: dp }));
 const small = (n: number | null) => (n == null ? "—" : n >= 1 ? money(n, 2) : money(n, 4));
-const LARGE: Record<string, string> = { g: "kg", ml: "L", pc: "dozen" };
+const LARGE: Record<string, string> = { g: "kg", ml: "L" };
+// Needs attention: no price yet, or no gram/ml conversion (bought per qty/packet without a pack size).
+const needs = (r: IngredientCostRow) => !r.hasCost || (r.measure !== "g" && r.measure !== "ml");
 
 export function CostTable({ rows, categories }: { rows: IngredientCostRow[]; categories: { id: string; name: string }[] }) {
   const [q, setQ] = useState("");
@@ -20,11 +22,11 @@ export function CostTable({ rows, categories }: { rows: IngredientCostRow[]; cat
   const shown = useMemo(() => {
     const s = q.trim().toLowerCase();
     return rows.filter((r) =>
-      (kind === "all" || (kind === "missing" ? !r.hasCost || r.perSmall == null : r.kind === kind)) &&
+      (kind === "all" || (kind === "missing" ? needs(r) : r.kind === kind)) &&
       (!s || r.name.toLowerCase().includes(s) || (cat.get(r.categoryId ?? "") ?? "").toLowerCase().includes(s)));
   }, [rows, q, kind]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const missing = rows.filter((r) => !r.hasCost || r.perSmall == null).length;
+  const missing = rows.filter(needs).length;
 
   function exportCsv() {
     const head = ["Item", "Type", "Category", "Base unit", "Pack size", "Purchase cost / base unit", "Usable yield %", "Usable cost / base unit", "Per g/ml/pc", "Per kg/L/dozen", "Measure"];
@@ -67,9 +69,10 @@ export function CostTable({ rows, categories }: { rows: IngredientCostRow[]; cat
                 <td className="p-2 text-right tabular-nums">{r.purchaseCost > 0 ? `${money(r.purchaseCost)}/${r.baseUnit}` : <span className="text-amber-600">{r.kind === "prep" ? "no recipe" : "no purchase yet"}</span>}</td>
                 <td className={cn("p-2 text-right tabular-nums", r.yieldPct < 100 && "text-amber-600")}>{r.kind === "prep" ? "—" : `${r.yieldPct}%`}</td>
                 <td className="p-2 text-right font-medium tabular-nums">
-                  {r.perSmall != null && r.hasCost ? `${small(r.perSmall)}/${r.measure}` : r.hasCost ? <span className="text-xs text-amber-600">set pack size</span> : "—"}
+                  {!r.hasCost ? "—" : r.measure === "g" || r.measure === "ml" ? `${small(r.perSmall)}/${r.measure}`
+                    : <span className="text-xs font-normal text-amber-600">set pack size (1 {r.baseUnit} = ? g)</span>}
                 </td>
-                <td className="p-2 text-right font-semibold tabular-nums">{r.perLarge != null && r.hasCost ? `${money(r.perLarge)}/${LARGE[r.measure ?? "g"]}` : "—"}</td>
+                <td className="p-2 text-right font-semibold tabular-nums">{r.perLarge != null && r.hasCost && (r.measure === "g" || r.measure === "ml") ? `${money(r.perLarge)}/${LARGE[r.measure]}` : "—"}</td>
               </tr>
             ))}
             {shown.length === 0 && <tr><td colSpan={7} className="p-6 text-center text-muted-foreground">No items match.</td></tr>}
