@@ -86,7 +86,7 @@ async function CostsTab({ orgId, canEdit }: { orgId: string; canEdit: boolean })
   const [rows, { data: cats }, { data: units }] = await Promise.all([
     getIngredientCosts(orgId),
     sb.from("categories").select("id, name").eq("org_id", orgId),
-    sb.from("units").select("id, abbr").eq("org_id", orgId).order("abbr"),
+    sb.from("units").select("id, abbr").eq("org_id", orgId).eq("is_active", true).order("abbr"),
   ]);
   // Units a pack size can be expressed in: weight and volume only (gms, kg, ml, lts…).
   const packUnits: PackUnit[] = [];

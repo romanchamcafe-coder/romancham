@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 export async function getMastersOverview(orgId: string) {
   const supabase = await createClient();
   const [{ data: units }, { data: cats }, { data: ings }, { data: vendors }] = await Promise.all([
-    supabase.from("units").select("id, name, abbr, factor_to_base, base_unit_id").eq("org_id", orgId).order("abbr"),
+    supabase.from("units").select("id, name, abbr, factor_to_base, base_unit_id").eq("org_id", orgId).eq("is_active", true).order("abbr"),
     supabase.from("categories").select("id, name, type").eq("org_id", orgId).eq("is_active", true).order("name"),
     supabase.from("ingredients")
       .select("id, name, material_type, category_id, base_unit_id, default_vendor_id, default_gst_rate, hsn_code, pack_content_qty, pack_content_unit_id, yield_pct")
