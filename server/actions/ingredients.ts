@@ -177,6 +177,7 @@ export async function restoreIngredient(id: string): Promise<ActionState> {
 export async function updateIngredientCosting(id: string, input: { yieldPct: string | number; packQty: string | number; packUnitId: string }): Promise<ActionState> {
   const ctx = await getActiveContext();
   if (!ctx?.orgId) return { error: "No active organization" };
+  if (ctx.role !== "owner" && ctx.role !== "admin") return { error: "Only the Owner/Admin can edit costs in Masters" };
   const y = Number(input.yieldPct);
   if (!(y > 0 && y <= 100)) return { error: "Usable % must be between 1 and 100" };
   const q = String(input.packQty ?? "").trim() === "" ? null : Number(input.packQty);

@@ -20,7 +20,7 @@ const LARGE: Record<string, string> = { g: "kg", ml: "L" };
 // Needs attention: no price yet, or no gram/ml conversion (bought per qty/packet without a pack size).
 const needs = (r: IngredientCostRow) => !r.hasCost || (r.measure !== "g" && r.measure !== "ml");
 
-export function CostTable({ rows, categories, packUnits }: { rows: IngredientCostRow[]; categories: { id: string; name: string }[]; packUnits: PackUnit[] }) {
+export function CostTable({ rows, categories, packUnits, canEdit = false }: { rows: IngredientCostRow[]; categories: { id: string; name: string }[]; packUnits: PackUnit[]; canEdit?: boolean }) {
   const router = useRouter();
   const [pending, start] = useTransition();
   const [ed, setEd] = useState<Edit | null>(null);
@@ -150,7 +150,7 @@ export function CostTable({ rows, categories, packUnits }: { rows: IngredientCos
                 </td>
                 <td className="p-2 text-right font-semibold tabular-nums">{r.perLarge != null && r.hasCost && (r.measure === "g" || r.measure === "ml") ? `${money(r.perLarge)}/${LARGE[r.measure]}` : "—"}</td>
                 <td className="p-2 text-right">
-                  {r.kind === "raw"
+                  {!canEdit ? null : r.kind === "raw"
                     ? <button type="button" onClick={() => startEdit(r)} disabled={!!ed} className="rounded p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-30" aria-label={`Edit ${r.name}`}><Pencil className="h-4 w-4" /></button>
                     : <a href="/recipes?tab=prep" className="text-xs text-primary underline">recipe</a>}
                 </td>
@@ -162,7 +162,7 @@ export function CostTable({ rows, categories, packUnits }: { rows: IngredientCos
       </Card>
       <p className="text-xs text-muted-foreground">
         Purchase cost = latest purchase price per unit bought. Per g/kg uses the <b>usable</b> cost (after trimming yield %) — the same numbers your recipes use.
-        Items bought per <b>qty/packet</b> need a <b>pack size</b> — click ✏️ on the row and enter e.g. “1 qty = 400 gms” to get the per-gram cost.
+        Items bought per <b>qty/packet</b> need a <b>pack size</b> (e.g. “1 qty = 400 gms”) to get the per-gram cost{canEdit ? " — click ✏️ on the row to set it." : " — ask the Owner/Admin to set it."}
       </p>
     </div>
   );
