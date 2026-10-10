@@ -6,6 +6,12 @@ import type { ActionState } from "@/lib/types";
 
 const orNull = (v: FormDataEntryValue | null) => { const s = String(v ?? "").trim(); return s === "" ? null : s; };
 const TYPES = ["purchase", "sales", "both", "prep"];
+// Same rule as the database duplicate lock: ignore case and extra spaces.
+const norm = (t: unknown) => String(t ?? "").trim().replace(/\s+/g, " ").toLowerCase();
+async function duplicateName(supabase: Awaited<ReturnType<typeof createClient>>, orgId: string, name: string, excludeId: string | null) {
+  const { data } = await supabase.from("ingredients").select("id, name").eq("org_id", orgId).eq("is_active", true);
+  return (data ?? []).find((r: any) => r.id !== excludeId && norm(r.name) === norm(name))?.name as string | undefined;
+}
 // Usable yield % of a raw item (trim/peel loss). Blank / invalid -> 100.
 const yieldPct = (v: unknown) => { const n = Number(v); return n > 0 && n <= 100 ? n : 100; };
 // "1 base unit contains N <unit>" (e.g. 1 qty = 400 gms). Blank clears it.
@@ -25,6 +31,8 @@ export async function createIngredient(_: ActionState | null, formData: FormData
   const fulfillment = ff === "stock" ? "stock" : "direct";
 
   const supabase = await createClient();
+  const dupName = await duplicateName(supabase, ctx.orgId, name, null);
+  if (dupName) return { error: `Ingredient "${dupName}" already exists — use it instead of creating a duplicate.` };
   const { error } = await supabase.from("ingredients").insert({
     org_id: ctx.orgId, name, material_type, fulfillment,
     category_id: orNull(formData.get("category_id")),
@@ -71,14 +79,14 @@ export async function importIngredients(
     if (u.name) unitMap.set(String(u.name).trim().toLowerCase(), u.id);
   }
   const venMap = new Map((vendors ?? []).map((v: any) => [String(v.name).trim().toLowerCase(), v.id]));
-  const have = new Set((existing ?? []).map((i: any) => String(i.name).trim().toLowerCase()));
+  const have = new Set((existing ?? []).map((i: any) => norm(i.name)));
 
   const seen = new Set<string>();
   const toAdd: Record<string, unknown>[] = [];
   for (const r of rows) {
     const name = (r.name || "").trim();
     if (!name) continue;
-    const key = name.toLowerCase();
+    const key = norm(name);
     if (have.has(key) || seen.has(key)) continue;
     seen.add(key);
     const t = (r.type || "").trim().toLowerCase();
@@ -131,6 +139,9 @@ export async function updateIngredient(id: string, input: IngredientInput): Prom
   const fulfillment = input.fulfillment === "stock" ? "stock" : "direct";
 
   const supabase = await createClient();
+  const { data: cur } = await supabase.from("ingredients").select("name").eq("id", id).eq("org_id", ctx.orgId).maybeSingle();
+  const dupU = cur && norm(cur.name) === norm(name) ? undefined : await duplicateName(supabase, ctx.orgId, name, id);
+  if (dupU) return { error: `Ingredient "${dupU}" already exists — pick a different name.` };
   const { error } = await supabase.from("ingredients").update({
     name, material_type: mt, fulfillment,
     category_id: input.category_id || null,
@@ -166,6 +177,9 @@ export async function restoreIngredient(id: string): Promise<ActionState> {
   const ctx = await getActiveContext();
   if (!ctx?.orgId || !id) return { error: "No active organization" };
   const supabase = await createClient();
+  const { data: me } = await supabase.from("ingredients").select("name").eq("id", id).eq("org_id", ctx.orgId).maybeSingle();
+  const dupR = me ? await duplicateName(supabase, ctx.orgId, me.name, id) : undefined;
+  if (dupR) return { error: `Can't restore — an active ingredient named "${dupR}" already exists.` };
   const { error } = await supabase.from("ingredients").update({ is_active: true }).eq("id", id).eq("org_id", ctx.orgId);
   if (error) return { error: error.message };
   revalidatePath("/masters/ingredients");
