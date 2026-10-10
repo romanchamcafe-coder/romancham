@@ -15,15 +15,19 @@ export async function IngredientsView({ type, hrefFor, showTitle = true }: { typ
   const { categories, units, vendors } = await getMaterialFormData(ctx!.orgId!);
   const items = await getMaterials(ctx!.orgId!, active === "all" ? undefined : active);
   const sb = await createClient();
-  const { data: archived } = await sb.from("ingredients").select("id, name")
-    .eq("org_id", ctx!.orgId!).eq("is_active", false).order("name").limit(50);
+  const [{ data: archived }, { data: all }] = await Promise.all([
+    sb.from("ingredients").select("id, name").eq("org_id", ctx!.orgId!).eq("is_active", false).order("name").limit(50),
+    sb.from("ingredients").select("name, material_type, base_unit_id").eq("org_id", ctx!.orgId!).eq("is_active", true).order("name"),
+  ]);
+  const uAbbr = new Map(units.map((u: any) => [u.id, u.abbr ?? u.name]));
+  const existing = (all ?? []).map((i: any) => ({ name: i.name, type: i.material_type, uom: i.base_unit_id ? uAbbr.get(i.base_unit_id) ?? "" : "" }));
   const tabs = [["all", "All"], ["purchase", "Purchase"], ["sales", "Sales"]] as const;
 
   return (
     <div className="space-y-4">
       {showTitle && <h1 className="text-xl font-semibold">Ingredients</h1>}
       <p className="text-sm text-muted-foreground">Your item master. <b>Purchase</b> items show in Purchases; <b>Sales</b> items are products you sell (they appear in the sales report).</p>
-      <IngredientForm categories={categories} units={units} vendors={vendors} />
+      <IngredientForm categories={categories} units={units} vendors={vendors} existing={existing} />
 
       <div className="flex gap-2">
         {tabs.map(([k, l]) => (
